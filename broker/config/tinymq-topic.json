@@ -1,0 +1,21 @@
+[
+	{
+		"commitLogModel":{
+			"fileName":"00000000",
+			"offset":239946,
+			"offsetLimit":1048576
+		},
+		"createAt":1701918231281,
+		"queueList":[
+			{
+				"fileName":"00000000",
+				"id":0,
+				"lastOffset":0,
+				"latestOffset":231744,
+				"offsetLimit":6291456
+			}
+		],
+		"topicName":"user_topic",
+		"updateAt":1701918231280
+	}
+]
