@@ -64,7 +64,7 @@ public class TcpNettyServerHandler extends SimpleChannelInboundHandler {
     }
 
     public HeartBeatEvent handleHeartBeatEvent(byte[] body) {
-        HeartBeatEvent event = JSON.parseObject(body, UnRegistryEvent.class);
+        HeartBeatEvent event = JSON.parseObject(body, HeartBeatEvent.class);
         logger.info("[EVENT][HEART BEAT EVENT] from broker {}", event.getIPAddr());
         return event;
     }

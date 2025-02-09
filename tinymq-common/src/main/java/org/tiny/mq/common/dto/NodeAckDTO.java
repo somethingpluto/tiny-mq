@@ -2,7 +2,9 @@ package org.tiny.mq.common.dto;
 
 import io.netty.channel.ChannelHandlerContext;
 
-public class NodeAckDTO {
+import java.io.Serializable;
+
+public class NodeAckDTO implements Serializable {
     private ChannelHandlerContext channelHandlerContext;
 
     public ChannelHandlerContext getChannelHandlerContext() {

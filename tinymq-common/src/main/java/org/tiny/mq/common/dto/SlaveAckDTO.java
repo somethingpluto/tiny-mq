@@ -2,9 +2,10 @@ package org.tiny.mq.common.dto;
 
 import io.netty.channel.ChannelHandlerContext;
 
+import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class SlaveAckDTO {
+public class SlaveAckDTO implements Serializable {
 
     private AtomicInteger needAckTime;
 

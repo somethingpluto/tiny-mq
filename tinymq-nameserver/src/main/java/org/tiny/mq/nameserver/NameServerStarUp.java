@@ -9,10 +9,11 @@ import org.tiny.mq.nameserver.task.TaskManager;
 import java.io.IOException;
 
 public class NameServerStarUp {
-    public static void main(String[] args) throws InterruptedException, IOException {
-        ConfigLoader configLoader = new ConfigLoader();
-        configLoader.loadProperties();
-        TaskManager.startInvalidServiceRemoveTask();
+
+    private static final ConfigLoader configLoader = new ConfigLoader();
+
+    public static void main(String[] args) throws InterruptedException {
+
         NameServerConfigModel nameserverConfig = GlobalConfig.getNameserverConfig();
         // 获取到了集群配置的属性
         // master-slave 复制? slave链路复制
@@ -20,5 +21,13 @@ public class NameServerStarUp {
         // 链路复制: slave角色开启一个额外的进程->master连接slave
         NameServerStarter nameServerStarter = new NameServerStarter(nameserverConfig.getNameserverPort());
         nameServerStarter.startServer();
+    }
+
+    public void initConfig() throws IOException {
+        configLoader.loadProperties();
+    }
+
+    public void initTask() {
+        TaskManager.startInvalidServiceRemoveTask();
     }
 }

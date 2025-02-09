@@ -1,9 +1,11 @@
 package org.tiny.mq.netty.nameserver.task;
 
+import com.alibaba.fastjson.JSON;
 import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tiny.mq.common.codec.TcpMessage;
+import org.tiny.mq.common.dto.HeartBeatDTO;
 import org.tiny.mq.common.enums.NameServerEventCode;
 import org.tiny.mq.config.GlobalCache;
 import org.tiny.mq.netty.nameserver.NameServerClient;
@@ -18,10 +20,13 @@ public class HeartBeatTask implements Runnable {
         while (true) {
             try {
                 TimeUnit.SECONDS.sleep(3);
-                // 心跳包不需要传输额外的数据
                 NameServerClient client = GlobalCache.getNameServerClient();
                 Channel channel = client.getChannel();
-                TcpMessage message = new TcpMessage(NameServerEventCode.HEART_BEAT.getCode(), new byte[]{});
+                HeartBeatDTO heartBeatDTO = new HeartBeatDTO();
+                heartBeatDTO.setBrokerIP(client.getClientIP());
+                heartBeatDTO.setBrokerPort(client.getClientPort());
+                byte[] body = JSON.toJSONBytes(heartBeatDTO);
+                TcpMessage message = new TcpMessage(NameServerEventCode.HEART_BEAT.getCode(), body);
                 channel.writeAndFlush(message);
                 logger.info("broker heart beat");
             } catch (InterruptedException e) {

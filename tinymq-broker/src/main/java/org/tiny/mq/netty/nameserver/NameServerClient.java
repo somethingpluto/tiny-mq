@@ -100,4 +100,12 @@ public class NameServerClient {
             throw new RuntimeException(e);
         }
     }
+
+    public String getClientIP() {
+        return clientIP;
+    }
+
+    public Integer getClientPort() {
+        return clientPort;
+    }
 }
