@@ -29,6 +29,10 @@ public class MasterReplicationServerHandler extends SimpleChannelInboundHandler 
         int code = message.getCode();
         byte[] body = message.getBody();
         Event event = null;
+        // 从节点发送连接，在master节点通过密码验证，建立连接
+
+        // 连接建立完成后master收到的数据 同步发送给slave节点
+
         if (NameServerEventCode.START_REPLICATION.getCode() == code) {
             event = handleStartReplicationEvent(body);
         } else if (NameServerEventCode.SLAVE_HEART_BEAT.getCode() == code) {

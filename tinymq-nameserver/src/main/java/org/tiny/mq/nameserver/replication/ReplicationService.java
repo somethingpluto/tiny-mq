@@ -35,22 +35,19 @@ public class ReplicationService {
     private static final Logger logger = LoggerFactory.getLogger(ReplicationService.class);
 
     public ReplicationModeEnum checkProperties() {
-        //
         NameServerConfigModel nameserverConfig = GlobalConfig.getNameserverConfig();
         String mode = nameserverConfig.getReplicationMode();
-        if (StringUtil.isNullOrEmpty(mode)) {
+        if (StringUtil.isNullOrEmpty(mode)) { // 单机版本
             logger.info("stand alone mode");
             return null;
         }
         // 判断参数是否合法
         ReplicationModeEnum replicationModeEnum = ReplicationModeEnum.of(mode);
         AssertUtils.isNotNull(replicationModeEnum, "replication mode arg invalid");
-        if (replicationModeEnum == ReplicationModeEnum.TRACE) {
-            // 链路复制
+        if (replicationModeEnum == ReplicationModeEnum.TRACE) { // 链路复制模式
             TraceReplicationConfigModel traceConfig = nameserverConfig.getTraceReplicationConfigModel();
             AssertUtils.isNotNull(traceConfig.getPort(), "node port is null");
-        } else {
-            // 主从复制
+        } else if (replicationModeEnum == ReplicationModeEnum.MASTER_SLAVE) { // 主从复制模式
             MasterSlaveReplicationConfigModel masterSlaveReplicationConfigModel = nameserverConfig.getMasterSlaveReplicationConfigModel();
             AssertUtils.isNotBlank(masterSlaveReplicationConfigModel.getMaster(), "master arg can not be empty");
             AssertUtils.isNotBlank(masterSlaveReplicationConfigModel.getRole(), "role arg can not be empty");
@@ -62,8 +59,7 @@ public class ReplicationService {
 
     // 2.根据参数判断复制的方式 开启一个netty进程，用于复制操作
     public void startReplicationTask(ReplicationModeEnum replicationModeEnum) {
-        // 单机版本 不做处理
-        if (replicationModeEnum == null) {
+        if (replicationModeEnum == null) { // 单机版本不用处理
             return;
         }
         int port = 0;
@@ -87,30 +83,28 @@ public class ReplicationService {
             port = nameserverConfig.getTraceReplicationConfigModel().getPort();
         }
         int replicationPort = port;
-        // master slave 如果是主节点 就开启netty server端服务
-        if (replicationRole == ReplicationRoleEnum.MASTER) {
+        if (replicationRole == ReplicationRoleEnum.MASTER) { // master-slave中的master 启动服务进程
             startNettyServerAsync(new MasterReplicationServerHandler(new EventBus("master-replication-task-")), replicationPort);
-        } else if (replicationRole == ReplicationRoleEnum.SLAVE) {
-            // 获取master节点地址
+        } else if (replicationRole == ReplicationRoleEnum.SLAVE) { // master-slave中的slave 启动client进程
             String masterAddress = nameserverConfig.getMasterSlaveReplicationConfigModel().getMaster();
-            startNettyConnAsync(new SlaveReplicationServerHandler(new EventBus("slave-replication-task-")), masterAddress);
+            startNettyClientAsync(new SlaveReplicationServerHandler(new EventBus("slave-replication-task-")), masterAddress);
         } else if (replicationRole == ReplicationRoleEnum.NODE) {
             // 链式复制 节点角色
             String nextNode = nameserverConfig.getTraceReplicationConfigModel().getNextNode();
             startNettyServerAsync(new NodeSendReplicationMsgServerHandler(new EventBus("node-write -task-")), replicationPort);
-            startNettyConnAsync(new NodeWriteMsgReplicationServerHandler(new EventBus("node-send-replication-msg-task-")), nextNode);
+            startNettyClientAsync(new NodeWriteMsgReplicationServerHandler(new EventBus("node-send-replication-msg-task-")), nextNode);
         } else if (replicationRole == ReplicationRoleEnum.TAIL_NODE) {
             startNettyServerAsync(new NodeWriteMsgReplicationServerHandler(new EventBus("node-write-msg-replication-task-")), replicationPort);
         }
     }
 
     /**
-     * 开启netty 连接进程
+     * 开启netty client进程
      *
      * @param simpleChannelInboundHandler
      * @param address
      */
-    private void startNettyConnAsync(SimpleChannelInboundHandler simpleChannelInboundHandler, String address) {
+    private void startNettyClientAsync(SimpleChannelInboundHandler simpleChannelInboundHandler, String address) {
         Thread nettyConnectTask = new Thread(() -> {
             NioEventLoopGroup clientGroup = new NioEventLoopGroup();
             Bootstrap bootstrap = new Bootstrap();

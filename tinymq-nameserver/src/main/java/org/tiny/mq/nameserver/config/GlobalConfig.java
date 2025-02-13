@@ -1,9 +1,14 @@
 package org.tiny.mq.nameserver.config;
 
 import io.netty.channel.Channel;
+import org.tiny.mq.common.dto.SlaveAckDTO;
 import org.tiny.mq.nameserver.model.NameServerConfigModel;
 import org.tiny.mq.nameserver.store.ReplicationChannelManager;
+import org.tiny.mq.nameserver.store.ReplicationMsgQueueManager;
 import org.tiny.mq.nameserver.store.ServiceInstanceManager;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class GlobalConfig {
     private static Channel connectNodeChannel = null;
@@ -11,7 +16,10 @@ public class GlobalConfig {
     private static ServiceInstanceManager serviceInstanceManager = new ServiceInstanceManager();
     private static NameServerConfigModel nameserverConfig = new NameServerConfigModel();
     private static ReplicationChannelManager replicationChannelManager = new ReplicationChannelManager();
+    private static Map<String, SlaveAckDTO> slaveACKMap = new ConcurrentHashMap<>();
+
     private static ConfigLoader configLoader = new ConfigLoader();
+    private static final ReplicationMsgQueueManager replicationMsgQueueManager = new ReplicationMsgQueueManager();
 
     public static ServiceInstanceManager getServiceInstanceManager() {
         return serviceInstanceManager;
@@ -59,5 +67,17 @@ public class GlobalConfig {
 
     public static void setPreNodeChannel(Channel preNodeChannel) {
         GlobalConfig.preNodeChannel = preNodeChannel;
+    }
+
+    public static Map<String, SlaveAckDTO> getSlaveACKMap() {
+        return slaveACKMap;
+    }
+
+    public static void setSlaveACKMap(Map<String, SlaveAckDTO> slaveACKMap) {
+        GlobalConfig.slaveACKMap = slaveACKMap;
+    }
+
+    public static ReplicationMsgQueueManager getReplicationMsgQueueManager() {
+        return replicationMsgQueueManager;
     }
 }

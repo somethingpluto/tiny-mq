@@ -5,8 +5,8 @@ import io.netty.channel.ChannelHandlerContext;
 public abstract class Event {
     private String msgId;
 
-    private String brokerIP;
-    private Integer brokerPort;
+    private String clientIP;
+    private Integer clientPort;
 
     private ChannelHandlerContext channelHandlerContext;
 
@@ -26,23 +26,23 @@ public abstract class Event {
         this.channelHandlerContext = channelHandlerContext;
     }
 
-    public String getBrokerIP() {
-        return brokerIP;
+    public String getClientIP() {
+        return clientIP;
     }
 
-    public void setBrokerIP(String brokerIP) {
-        this.brokerIP = brokerIP;
+    public void setClientIP(String clientIP) {
+        this.clientIP = clientIP;
     }
 
-    public Integer getBrokerPort() {
-        return brokerPort;
+    public Integer getClientPort() {
+        return clientPort;
     }
 
-    public void setBrokerPort(Integer brokerPort) {
-        this.brokerPort = brokerPort;
+    public void setClientPort(Integer clientPort) {
+        this.clientPort = clientPort;
     }
 
     public String getIPAddr() {
-        return brokerIP + ":" + brokerPort;
+        return clientIP + ":" + clientPort;
     }
 }

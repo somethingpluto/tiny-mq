@@ -18,6 +18,7 @@ public class ReplicationChannelManager {
         channelHandlerContextMap.put(reqId, channelHandlerContext);
     }
 
+
     public void get(String reqId) {
         channelHandlerContextMap.get(reqId);
     }

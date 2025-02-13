@@ -29,5 +29,6 @@ public class NameServerStarUp {
 
     public void initTask() {
         TaskManager.startInvalidServiceRemoveTask();
+        
     }
 }

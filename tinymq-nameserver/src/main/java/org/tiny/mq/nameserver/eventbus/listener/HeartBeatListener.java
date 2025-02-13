@@ -5,7 +5,7 @@ import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tiny.mq.common.codec.TcpMessage;
-import org.tiny.mq.common.enums.NameServerResponseCode;
+import org.tiny.mq.common.enums.MessageTypeEnum;
 import org.tiny.mq.nameserver.config.GlobalConfig;
 import org.tiny.mq.nameserver.eventbus.event.HeartBeatEvent;
 import org.tiny.mq.nameserver.store.ServiceInstance;
@@ -20,8 +20,8 @@ public class HeartBeatListener implements Listener<HeartBeatEvent> {
         Object reqId = channelHandlerContext.attr(AttributeKey.valueOf("reqId")).get();
         if (reqId == null) {
             logger.info("un auth connect from {}", event.getIPAddr());
-            TcpMessage tcpMessage = new TcpMessage(NameServerResponseCode.ERROR_USER_OR_PASSWORD.getCode(), NameServerResponseCode.ERROR_USER_OR_PASSWORD.getDesc().getBytes());
-            channelHandlerContext.writeAndFlush(tcpMessage);
+            TcpMessage message = MessageTypeEnum.ERROR_USER_MESSAGE.getTcpMessage();
+            channelHandlerContext.writeAndFlush(message);
             channelHandlerContext.close();
             throw new IllegalAccessException("error account to connected");
         }
