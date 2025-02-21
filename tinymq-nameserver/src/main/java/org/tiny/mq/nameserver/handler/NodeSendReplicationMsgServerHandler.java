@@ -10,6 +10,9 @@ import org.tiny.mq.common.enums.NameServerEventCode;
 import org.tiny.mq.nameserver.eventbus.EventBus;
 import org.tiny.mq.nameserver.eventbus.event.Event;
 
+/**
+ * 向下一个节点发送同步数据的处理器
+ */
 @ChannelHandler.Sharable
 public class NodeSendReplicationMsgServerHandler extends SimpleChannelInboundHandler {
     private static final Logger logger = LoggerFactory.getLogger(NodeSendReplicationMsgServerHandler.class);

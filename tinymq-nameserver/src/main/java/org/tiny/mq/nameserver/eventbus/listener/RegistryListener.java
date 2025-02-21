@@ -6,10 +6,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tiny.mq.common.codec.TcpMessage;
 import org.tiny.mq.common.enums.MessageTypeEnum;
+import org.tiny.mq.common.enums.ReplicationMsgTypeEnum;
 import org.tiny.mq.nameserver.config.GlobalConfig;
 import org.tiny.mq.nameserver.eventbus.event.RegistryEvent;
+import org.tiny.mq.nameserver.eventbus.event.ReplicationMsgEvent;
 import org.tiny.mq.nameserver.store.ServiceInstance;
 import org.tiny.mq.nameserver.utils.NameServerUtils;
+
+import java.util.UUID;
 
 /**
  * 处理注册事件
@@ -30,8 +34,8 @@ public class RegistryListener implements Listener<RegistryEvent> {
             channelHandlerContext.close();
             throw new IllegalAccessException("error account to connected!");
         }
-        // 通过验证 创建id 保存到manager
         channelHandlerContext.attr(AttributeKey.valueOf("reqId")).set(event.getIPAddr());
+        // 记录instance
         ServiceInstance serviceInstance = new ServiceInstance();
         serviceInstance.setBrokerIp(event.getClientIP());
         serviceInstance.setBrokerPort(event.getClientPort());
@@ -39,7 +43,14 @@ public class RegistryListener implements Listener<RegistryEvent> {
         GlobalConfig.getServiceInstanceManager().put(serviceInstance);
         channelHandlerContext.writeAndFlush(MessageTypeEnum.REGISTRY_SUCCESS_MESSAGE.getTcpMessage());
         logger.info("nameserver get registry from {}", event.getIPAddr());
-
+        // 如果当前是主从模式，且当前节点是主节点，就往队列里面塞元素
+        ReplicationMsgEvent replicationMsgEvent = new ReplicationMsgEvent();
+        replicationMsgEvent.setServiceInstance(serviceInstance);
+        replicationMsgEvent.setMsgId(UUID.randomUUID().toString());
+        replicationMsgEvent.setChannelHandlerContext(event.getChannelHandlerContext());
+        replicationMsgEvent.setType(ReplicationMsgTypeEnum.REGISTRY.getCode());
+        // 将复制任务交由replication队列
+        GlobalConfig.getReplicationMsgQueueManager().put(replicationMsgEvent);
         // 同步给到从节点，比较严谨的同步，binlog类型，对于数据的顺序性要求很高
         // 可能是无序状态
         // 把同步的数据塞入一条队列单中，专门有一条线程从队列中提取数据，同步给各个从节点

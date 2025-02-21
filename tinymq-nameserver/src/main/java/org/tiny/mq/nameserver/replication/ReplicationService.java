@@ -83,17 +83,23 @@ public class ReplicationService {
             port = nameserverConfig.getTraceReplicationConfigModel().getPort();
         }
         int replicationPort = port;
-        if (replicationRole == ReplicationRoleEnum.MASTER) { // master-slave中的master 启动服务进程
+        if (replicationRole == ReplicationRoleEnum.MASTER) {
+            // 主从复制 主节点
+            // 服务端
             startNettyServerAsync(new MasterReplicationServerHandler(new EventBus("master-replication-task-")), replicationPort);
-        } else if (replicationRole == ReplicationRoleEnum.SLAVE) { // master-slave中的slave 启动client进程
+        } else if (replicationRole == ReplicationRoleEnum.SLAVE) {
+            // master-slave中的slave 启动client进程
             String masterAddress = nameserverConfig.getMasterSlaveReplicationConfigModel().getMaster();
             startNettyClientAsync(new SlaveReplicationServerHandler(new EventBus("slave-replication-task-")), masterAddress);
         } else if (replicationRole == ReplicationRoleEnum.NODE) {
-            // 链式复制 节点角色
+            // 链式复制 角色为中间节点
             String nextNode = nameserverConfig.getTraceReplicationConfigModel().getNextNode();
+            // 1.开启netty服务 向下游节点发送消息
             startNettyServerAsync(new NodeSendReplicationMsgServerHandler(new EventBus("node-write -task-")), replicationPort);
+            // 2.开启netty服务 向上游节点汇报同步信息
             startNettyClientAsync(new NodeWriteMsgReplicationServerHandler(new EventBus("node-send-replication-msg-task-")), nextNode);
         } else if (replicationRole == ReplicationRoleEnum.TAIL_NODE) {
+            // 链式复制中的尾节点，开启服务端接受上一节点传输过来的数据
             startNettyServerAsync(new NodeWriteMsgReplicationServerHandler(new EventBus("node-write-msg-replication-task-")), replicationPort);
         }
     }

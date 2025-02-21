@@ -1,8 +1,10 @@
 package org.tiny.mq.nameserver.config;
 
 import io.netty.channel.Channel;
+import org.tiny.mq.common.dto.NodeAckDTO;
 import org.tiny.mq.common.dto.SlaveAckDTO;
 import org.tiny.mq.nameserver.model.NameServerConfigModel;
+import org.tiny.mq.nameserver.replication.ReplicationTask;
 import org.tiny.mq.nameserver.store.ReplicationChannelManager;
 import org.tiny.mq.nameserver.store.ReplicationMsgQueueManager;
 import org.tiny.mq.nameserver.store.ServiceInstanceManager;
@@ -11,15 +13,33 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class GlobalConfig {
+    private static final ReplicationMsgQueueManager replicationMsgQueueManager = new ReplicationMsgQueueManager();
+    private static final Map<String, NodeAckDTO> nodeAckMap = new ConcurrentHashMap<>();
+    private static final Map<String, SlaveAckDTO> ackMap = new ConcurrentHashMap<>();
     private static Channel connectNodeChannel = null;
     private static Channel preNodeChannel = null;
     private static ServiceInstanceManager serviceInstanceManager = new ServiceInstanceManager();
     private static NameServerConfigModel nameserverConfig = new NameServerConfigModel();
     private static ReplicationChannelManager replicationChannelManager = new ReplicationChannelManager();
     private static Map<String, SlaveAckDTO> slaveACKMap = new ConcurrentHashMap<>();
-
     private static ConfigLoader configLoader = new ConfigLoader();
-    private static final ReplicationMsgQueueManager replicationMsgQueueManager = new ReplicationMsgQueueManager();
+    private static ReplicationTask replicationTask;
+
+    public static ReplicationTask getReplicationTask() {
+        return replicationTask;
+    }
+
+    public static void setReplicationTask(ReplicationTask replicationTask) {
+        GlobalConfig.replicationTask = replicationTask;
+    }
+
+    public static Map<String, NodeAckDTO> getNodeAckMap() {
+        return nodeAckMap;
+    }
+
+    public static Map<String, SlaveAckDTO> getAckMap() {
+        return ackMap;
+    }
 
     public static ServiceInstanceManager getServiceInstanceManager() {
         return serviceInstanceManager;

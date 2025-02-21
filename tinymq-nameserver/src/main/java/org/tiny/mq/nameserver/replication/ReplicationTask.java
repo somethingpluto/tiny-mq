@@ -1,6 +1,7 @@
 package org.tiny.mq.nameserver.replication;
 
 public abstract class ReplicationTask {
+
     private final String taskName;
 
     public ReplicationTask(String taskName) {
@@ -9,11 +10,12 @@ public abstract class ReplicationTask {
 
     public void startTaskAsync() {
         Thread task = new Thread(() -> {
+            System.out.println("start job:" + taskName);
             startTask();
         });
         task.setName(taskName);
         task.start();
     }
 
-    abstract void startTask() throws InterruptedException;
+    abstract void startTask();
 }

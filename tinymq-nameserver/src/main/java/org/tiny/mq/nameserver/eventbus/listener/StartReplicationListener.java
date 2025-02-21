@@ -33,7 +33,6 @@ public class StartReplicationListener implements Listener<StartReplicationEvent>
         // 保存从节点通道
         GlobalConfig.getReplicationChannelManager().put(slaveIPAddr, channelHandlerContext);
         // 回应节点 表明已完成
-        TcpMessage message = MessageTypeEnum.MASTER_REPLICATION_MESSAGE.getTcpMessage();
-        channelHandlerContext.writeAndFlush(message);
+        channelHandlerContext.writeAndFlush(MessageTypeEnum.MASTER_REPLICATION_MESSAGE.getTcpMessage());
     }
 }

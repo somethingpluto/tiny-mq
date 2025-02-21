@@ -22,7 +22,6 @@ public class SlaveReplicationServerHandler extends SimpleChannelInboundHandler {
         this.eventBus = eventBus;
     }
 
-
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object o) throws Exception {
         TcpMessage message = (TcpMessage) o;
