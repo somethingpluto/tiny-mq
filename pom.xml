@@ -12,6 +12,7 @@
         <module>tinymq-broker</module>
         <module>tinymq-nameserver</module>
         <module>tinymq-common</module>
+        <module>tinymq-client</module>
     </modules>
 
     <properties>

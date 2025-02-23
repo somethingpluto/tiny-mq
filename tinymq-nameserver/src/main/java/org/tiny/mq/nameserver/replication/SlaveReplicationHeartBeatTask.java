@@ -21,7 +21,7 @@ public class SlaveReplicationHeartBeatTask extends ReplicationTask {
     }
 
     @Override
-    void startTask() throws InterruptedException {
+    void startTask() {
         StartReplicationEvent startReplicationEvent = new StartReplicationEvent();
         startReplicationEvent.setUser(GlobalConfig.getNameserverConfig().getNameserverUser());
         startReplicationEvent.setPassword(GlobalConfig.getNameserverConfig().getNameserverPassword());

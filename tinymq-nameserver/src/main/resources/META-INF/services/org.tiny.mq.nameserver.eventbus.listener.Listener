@@ -5,3 +5,4 @@ org.tiny.mq.nameserver.eventbus.listener.StartReplicationListener
 org.tiny.mq.nameserver.eventbus.listener.SlaveHeartBeatListener
 org.tiny.mq.nameserver.eventbus.listener.SlaveReplicationMsgAckListener
 org.tiny.mq.nameserver.eventbus.listener.SlaveReplicationMsgListener
+org.tiny.mq.nameserver.eventbus.listener.NodeReplicationMsgListener

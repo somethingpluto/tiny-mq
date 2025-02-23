@@ -7,8 +7,9 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="tinymq-common" />
-        <module name="tinymq-broker" />
         <module name="tinymq-nameserver" />
+        <module name="tinymq-client" />
+        <module name="tinymq-broker" />
       </profile>
     </annotationProcessing>
   </component>

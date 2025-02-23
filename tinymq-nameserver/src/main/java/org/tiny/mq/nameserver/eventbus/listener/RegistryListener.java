@@ -8,6 +8,7 @@ import org.tiny.mq.common.codec.TcpMessage;
 import org.tiny.mq.common.enums.MessageTypeEnum;
 import org.tiny.mq.common.enums.ReplicationMsgTypeEnum;
 import org.tiny.mq.nameserver.config.GlobalConfig;
+import org.tiny.mq.nameserver.enums.ReplicationModeEnum;
 import org.tiny.mq.nameserver.eventbus.event.RegistryEvent;
 import org.tiny.mq.nameserver.eventbus.event.ReplicationMsgEvent;
 import org.tiny.mq.nameserver.store.ServiceInstance;
@@ -37,12 +38,20 @@ public class RegistryListener implements Listener<RegistryEvent> {
         channelHandlerContext.attr(AttributeKey.valueOf("reqId")).set(event.getIPAddr());
         // 记录instance
         ServiceInstance serviceInstance = new ServiceInstance();
-        serviceInstance.setBrokerIp(event.getClientIP());
-        serviceInstance.setBrokerPort(event.getClientPort());
+        serviceInstance.setIp(event.getClientIP());
+        serviceInstance.setPort(event.getClientPort());
         serviceInstance.setFirstRegistryTime(System.currentTimeMillis());
         GlobalConfig.getServiceInstanceManager().put(serviceInstance);
         channelHandlerContext.writeAndFlush(MessageTypeEnum.REGISTRY_SUCCESS_MESSAGE.getTcpMessage());
         logger.info("nameserver get registry from {}", event.getIPAddr());
+        // 如果是单机架构
+        String mode = GlobalConfig.getNameserverConfig().getReplicationMode();
+        ReplicationModeEnum replicationMode = ReplicationModeEnum.of(mode);
+        // 单机模式注册成功直接返回
+        if (replicationMode == null) {
+            channelHandlerContext.writeAndFlush(MessageTypeEnum.REGISTRY_SUCCESS_MESSAGE);
+            return;
+        }
         // 如果当前是主从模式，且当前节点是主节点，就往队列里面塞元素
         ReplicationMsgEvent replicationMsgEvent = new ReplicationMsgEvent();
         replicationMsgEvent.setServiceInstance(serviceInstance);
