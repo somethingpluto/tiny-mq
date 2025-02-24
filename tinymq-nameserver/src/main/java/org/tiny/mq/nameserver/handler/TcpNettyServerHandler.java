@@ -4,9 +4,11 @@ import com.alibaba.fastjson.JSON;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.internal.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tiny.mq.common.codec.TcpMessage;
+import org.tiny.mq.common.dto.ServiceRegistryReqDTO;
 import org.tiny.mq.common.enums.NameServerEventCode;
 import org.tiny.mq.common.enums.NameServerResponseCode;
 import org.tiny.mq.nameserver.eventbus.EventBus;
@@ -14,6 +16,8 @@ import org.tiny.mq.nameserver.eventbus.event.Event;
 import org.tiny.mq.nameserver.eventbus.event.HeartBeatEvent;
 import org.tiny.mq.nameserver.eventbus.event.RegistryEvent;
 import org.tiny.mq.nameserver.eventbus.event.UnRegistryEvent;
+
+import java.net.InetSocketAddress;
 
 
 /**
@@ -43,7 +47,7 @@ public class TcpNettyServerHandler extends SimpleChannelInboundHandler {
         byte[] body = message.getBody();
         Event event;
         if (NameServerEventCode.REGISTRY.getCode() == code) {
-            event = handleRegistryEvent(body);
+            event = handleRegistryEvent(body, channelHandlerContext);
         } else if (NameServerEventCode.HEART_BEAT.getCode() == code) {
             event = handleHeartBeatEvent(body);
         } else if (NameServerEventCode.UN_REGISTRY.getCode() == code) {
@@ -57,21 +61,32 @@ public class TcpNettyServerHandler extends SimpleChannelInboundHandler {
     }
 
 
-    public RegistryEvent handleRegistryEvent(byte[] body) {
-        RegistryEvent event = JSON.parseObject(body, RegistryEvent.class);
-        logger.info("[EVENT][REGISTRY] from broker {}", event.getIPAddr());
-        return event;
+    public RegistryEvent handleRegistryEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {
+        ServiceRegistryReqDTO serviceRegistryReqDTO = JSON.parseObject(body, ServiceRegistryReqDTO.class);
+        RegistryEvent registryEvent = new RegistryEvent();
+        registryEvent.setMsgId(serviceRegistryReqDTO.getMsgId());
+        registryEvent.setUser(serviceRegistryReqDTO.getUser());
+        registryEvent.setPassword(serviceRegistryReqDTO.getPassword());
+        if (StringUtil.isNullOrEmpty(serviceRegistryReqDTO.getIp())) {
+            InetSocketAddress inetSocketAddress = (InetSocketAddress) channelHandlerContext.channel().remoteAddress();
+            registryEvent.setPort(inetSocketAddress.getPort());
+            registryEvent.setIp(inetSocketAddress.getHostString());
+        } else {
+            registryEvent.setPort(serviceRegistryReqDTO.getPort());
+            registryEvent.setIp(serviceRegistryReqDTO.getIp());
+        }
+        registryEvent.setRegistryType(serviceRegistryReqDTO.getRegistryType());
+        logger.info("[EVENT][REGISTRY] from broker {}", registryEvent);
+        return registryEvent;
     }
 
     public HeartBeatEvent handleHeartBeatEvent(byte[] body) {
         HeartBeatEvent event = JSON.parseObject(body, HeartBeatEvent.class);
-        logger.info("[EVENT][HEART BEAT EVENT] from broker {}", event.getIPAddr());
         return event;
     }
 
     public UnRegistryEvent handleUnRegistryEvent(byte[] body) {
         UnRegistryEvent event = JSON.parseObject(body, UnRegistryEvent.class);
-        logger.info("[EVENT][UN_REGISTRY EVENT] from broker {}", event.getIPAddr());
         return event;
     }
 
@@ -90,6 +105,9 @@ public class TcpNettyServerHandler extends SimpleChannelInboundHandler {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         UnRegistryEvent unRegistryEvent = new UnRegistryEvent();
+        InetSocketAddress socketAddress = (InetSocketAddress) ctx.channel().remoteAddress();
+        unRegistryEvent.setIp(socketAddress.getHostString());
+        unRegistryEvent.setPort(socketAddress.getPort());
         unRegistryEvent.setChannelHandlerContext(ctx);
         eventBus.publish(unRegistryEvent);
     }

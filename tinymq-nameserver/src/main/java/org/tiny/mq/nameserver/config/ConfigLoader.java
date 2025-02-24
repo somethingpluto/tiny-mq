@@ -20,7 +20,7 @@ public class ConfigLoader {
         nameserverConfig.setNameserverPassword(getStr(NameServerConstants.CONFIG_PASSWORD));
         nameserverConfig.setNameserverUser(getStr(NameServerConstants.CONFIG_USER));
         nameserverConfig.setNameserverPort(getInt(NameServerConstants.CONFIG_PORT));
-        nameserverConfig.setReplicationMode(getStr(NameServerConstants.CONFIG_REPLICATION_MODE));
+        nameserverConfig.setReplicationMode(getStrCanBeNull(NameServerConstants.CONFIG_REPLICATION_MODE));
 
         TraceReplicationConfigModel traceReplicationConfig = new TraceReplicationConfigModel();
         traceReplicationConfig.setNextNode(getStrCanBeNull(NameServerConstants.CONFIG_REPLICATION_TRACE_NEXT_NODE));

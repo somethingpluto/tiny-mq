@@ -11,7 +11,7 @@ public class ServiceRegistryReqDTO extends BaseNameServerRemoteDTO {
     private String user;
     private String password;
     private String ip;
-    private String port;
+    private Integer port;
     private Map<String, Object> attrs = new HashMap<>();
 
     public String getRegistryType() {
@@ -46,12 +46,8 @@ public class ServiceRegistryReqDTO extends BaseNameServerRemoteDTO {
         this.ip = ip;
     }
 
-    public String getPort() {
+    public Integer getPort() {
         return port;
-    }
-
-    public void setPort(String port) {
-        this.port = port;
     }
 
     public Map<String, Object> getAttrs() {

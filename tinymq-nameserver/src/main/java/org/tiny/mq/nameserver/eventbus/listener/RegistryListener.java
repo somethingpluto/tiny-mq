@@ -1,11 +1,13 @@
 package org.tiny.mq.nameserver.eventbus.listener;
 
+import com.alibaba.fastjson.JSON;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tiny.mq.common.codec.TcpMessage;
-import org.tiny.mq.common.enums.MessageTypeEnum;
+import org.tiny.mq.common.dto.ServiceRegistryRespDTO;
+import org.tiny.mq.common.enums.NameServerResponseCode;
 import org.tiny.mq.common.enums.ReplicationMsgTypeEnum;
 import org.tiny.mq.nameserver.config.GlobalConfig;
 import org.tiny.mq.nameserver.enums.ReplicationModeEnum;
@@ -29,8 +31,9 @@ public class RegistryListener implements Listener<RegistryEvent> {
         ChannelHandlerContext channelHandlerContext = event.getChannelHandlerContext();
         boolean verify = NameServerUtils.isVerify(user, password);
         if (!verify) {
-            logger.info("un auth connect from {}", event.getIPAddr());
-            TcpMessage message = MessageTypeEnum.ERROR_USER_MESSAGE.getTcpMessage();
+            ServiceRegistryRespDTO serviceRegistryRespDTO = new ServiceRegistryRespDTO();
+            serviceRegistryRespDTO.setMsgId(event.getMsgId());
+            TcpMessage message = new TcpMessage(NameServerResponseCode.ERROR_USER_OR_PASSWORD.getCode(), JSON.toJSONBytes(serviceRegistryRespDTO));
             channelHandlerContext.writeAndFlush(message);
             channelHandlerContext.close();
             throw new IllegalAccessException("error account to connected!");
@@ -38,18 +41,22 @@ public class RegistryListener implements Listener<RegistryEvent> {
         channelHandlerContext.attr(AttributeKey.valueOf("reqId")).set(event.getIPAddr());
         // 记录instance
         ServiceInstance serviceInstance = new ServiceInstance();
-        serviceInstance.setIp(event.getClientIP());
-        serviceInstance.setPort(event.getClientPort());
+        serviceInstance.setIp(event.getIp());
+        serviceInstance.setPort(event.getPort());
         serviceInstance.setFirstRegistryTime(System.currentTimeMillis());
+        // 保存service instance 到内存当中
         GlobalConfig.getServiceInstanceManager().put(serviceInstance);
-        channelHandlerContext.writeAndFlush(MessageTypeEnum.REGISTRY_SUCCESS_MESSAGE.getTcpMessage());
         logger.info("nameserver get registry from {}", event.getIPAddr());
         // 如果是单机架构
         String mode = GlobalConfig.getNameserverConfig().getReplicationMode();
         ReplicationModeEnum replicationMode = ReplicationModeEnum.of(mode);
         // 单机模式注册成功直接返回
         if (replicationMode == null) {
-            channelHandlerContext.writeAndFlush(MessageTypeEnum.REGISTRY_SUCCESS_MESSAGE);
+            String msgId = event.getMsgId();
+            ServiceRegistryRespDTO serviceRegistryRespDTO = new ServiceRegistryRespDTO();
+            serviceRegistryRespDTO.setMsgId(msgId);
+            byte[] body = JSON.toJSONBytes(serviceRegistryRespDTO);
+            channelHandlerContext.writeAndFlush(new TcpMessage(NameServerResponseCode.REGISTRY_SUCCESS.getCode(), body));
             return;
         }
         // 如果当前是主从模式，且当前节点是主节点，就往队列里面塞元素

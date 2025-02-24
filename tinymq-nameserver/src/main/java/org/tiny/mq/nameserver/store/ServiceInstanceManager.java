@@ -7,15 +7,15 @@ public class ServiceInstanceManager {
     private final Map<String, ServiceInstance> serviceInstanceMap = new ConcurrentHashMap<>();
 
     public void putIfExist(ServiceInstance serviceInstance) {
-        ServiceInstance currentInstance = this.get(serviceInstance.getBrokerIp(), serviceInstance.getBrokerPort());
+        ServiceInstance currentInstance = this.get(serviceInstance.getIp(), serviceInstance.getPort());
         if (currentInstance != null && currentInstance.getFirstRegistryTime() != null) {
             serviceInstance.setFirstRegistryTime(currentInstance.getFirstRegistryTime());
         }
-        serviceInstanceMap.put(serviceInstance.getBrokerIp() + ":" + serviceInstance.getBrokerPort(), serviceInstance);
+        serviceInstanceMap.put(serviceInstance.getIp() + ":" + serviceInstance.getPort(), serviceInstance);
     }
 
     public void put(ServiceInstance serviceInstance) {
-        serviceInstanceMap.put(serviceInstance.getBrokerIp() + ":" + serviceInstance.getBrokerPort(), serviceInstance);
+        serviceInstanceMap.put(serviceInstance.getIp() + ":" + serviceInstance.getPort(), serviceInstance);
     }
 
     public ServiceInstance get(String brokerIp, Integer brokerPort) {
