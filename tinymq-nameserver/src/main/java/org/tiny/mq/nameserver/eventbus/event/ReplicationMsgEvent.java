@@ -1,5 +1,6 @@
 package org.tiny.mq.nameserver.eventbus.event;
 
+import org.tiny.mq.common.eventbus.Event;
 import org.tiny.mq.nameserver.store.ServiceInstance;
 
 public class ReplicationMsgEvent extends Event {

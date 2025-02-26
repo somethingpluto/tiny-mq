@@ -1,5 +1,7 @@
 package org.tiny.mq.nameserver.eventbus.event;
 
+import org.tiny.mq.common.eventbus.Event;
+
 public class NodeReplicationAckMsgEvent extends Event {
     private Integer type;
     private String nodeIP;

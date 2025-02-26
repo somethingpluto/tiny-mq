@@ -8,12 +8,15 @@ import io.netty.util.internal.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tiny.mq.common.codec.TcpMessage;
+import org.tiny.mq.common.dto.HeartBeatDTO;
+import org.tiny.mq.common.dto.PullBrokerIpReqDTO;
 import org.tiny.mq.common.dto.ServiceRegistryReqDTO;
 import org.tiny.mq.common.enums.NameServerEventCode;
 import org.tiny.mq.common.enums.NameServerResponseCode;
-import org.tiny.mq.nameserver.eventbus.EventBus;
-import org.tiny.mq.nameserver.eventbus.event.Event;
+import org.tiny.mq.common.eventbus.Event;
+import org.tiny.mq.common.eventbus.EventBus;
 import org.tiny.mq.nameserver.eventbus.event.HeartBeatEvent;
+import org.tiny.mq.nameserver.eventbus.event.PullBrokerIPListEvent;
 import org.tiny.mq.nameserver.eventbus.event.RegistryEvent;
 import org.tiny.mq.nameserver.eventbus.event.UnRegistryEvent;
 
@@ -28,6 +31,7 @@ public class TcpNettyServerHandler extends SimpleChannelInboundHandler {
     private static final Logger logger = LoggerFactory.getLogger(TcpNettyServerHandler.class);
     private final EventBus eventBus;
 
+
     public TcpNettyServerHandler(EventBus eventBus) {
         this.eventBus = eventBus;
     }
@@ -41,7 +45,7 @@ public class TcpNettyServerHandler extends SimpleChannelInboundHandler {
      * @throws Exception
      */
     @Override
-    protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object o) throws Exception {
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object o) {
         TcpMessage message = (TcpMessage) o;
         int code = message.getCode();
         byte[] body = message.getBody();
@@ -49,17 +53,28 @@ public class TcpNettyServerHandler extends SimpleChannelInboundHandler {
         if (NameServerEventCode.REGISTRY.getCode() == code) {
             event = handleRegistryEvent(body, channelHandlerContext);
         } else if (NameServerEventCode.HEART_BEAT.getCode() == code) {
-            event = handleHeartBeatEvent(body);
+            event = handleHeartBeatEvent(body, channelHandlerContext);
         } else if (NameServerEventCode.UN_REGISTRY.getCode() == code) {
-            event = handleUnRegistryEvent(body);
+            event = handleUnRegistryEvent(body, channelHandlerContext);
+        } else if (NameServerEventCode.PULL_BROKER_IP_LIST.getCode() == code) {
+            event = handlePullBrokerIPListEvent(body, channelHandlerContext);
         } else {
             handleUnknownEvent(channelHandlerContext);
             return;
         }
+        logger.info("Accept Event:{}", JSON.toJSONString(event));
         event.setChannelHandlerContext(channelHandlerContext);
         eventBus.publish(event);
     }
 
+    private PullBrokerIPListEvent handlePullBrokerIPListEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {
+        PullBrokerIpReqDTO pullBrokerIpReqDTO = JSON.parseObject(body, PullBrokerIpReqDTO.class);
+        PullBrokerIPListEvent pullBrokerIPListEvent = new PullBrokerIPListEvent();
+        pullBrokerIPListEvent.setRole(pullBrokerIpReqDTO.getRole());
+        pullBrokerIPListEvent.setMsgId(pullBrokerIpReqDTO.getMsgId());
+        return pullBrokerIPListEvent;
+    }
+ 
 
     public RegistryEvent handleRegistryEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {
         ServiceRegistryReqDTO serviceRegistryReqDTO = JSON.parseObject(body, ServiceRegistryReqDTO.class);
@@ -76,16 +91,17 @@ public class TcpNettyServerHandler extends SimpleChannelInboundHandler {
             registryEvent.setIp(serviceRegistryReqDTO.getIp());
         }
         registryEvent.setRegistryType(serviceRegistryReqDTO.getRegistryType());
-        logger.info("[EVENT][REGISTRY] from broker {}", registryEvent);
         return registryEvent;
     }
 
-    public HeartBeatEvent handleHeartBeatEvent(byte[] body) {
-        HeartBeatEvent event = JSON.parseObject(body, HeartBeatEvent.class);
-        return event;
+    public HeartBeatEvent handleHeartBeatEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {
+        HeartBeatDTO heartBeatDTO = JSON.parseObject(body, HeartBeatDTO.class);
+        HeartBeatEvent heartBeatEvent = new HeartBeatEvent();
+        heartBeatEvent.setMsgId(heartBeatDTO.getMsgId());
+        return heartBeatEvent;
     }
 
-    public UnRegistryEvent handleUnRegistryEvent(byte[] body) {
+    public UnRegistryEvent handleUnRegistryEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {
         UnRegistryEvent event = JSON.parseObject(body, UnRegistryEvent.class);
         return event;
     }

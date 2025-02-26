@@ -1,5 +1,7 @@
 package org.tiny.mq.nameserver.eventbus.event;
 
+import org.tiny.mq.common.eventbus.Event;
+
 public class SlaveHeartBeatEvent extends Event {
     private String ip;
     private Integer port;

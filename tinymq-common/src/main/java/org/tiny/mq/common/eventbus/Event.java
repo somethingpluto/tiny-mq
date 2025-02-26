@@ -1,4 +1,4 @@
-package org.tiny.mq.nameserver.eventbus.event;
+package org.tiny.mq.common.eventbus;
 
 import io.netty.channel.ChannelHandlerContext;
 

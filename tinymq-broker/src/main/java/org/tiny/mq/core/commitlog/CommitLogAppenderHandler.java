@@ -3,6 +3,7 @@ package org.tiny.mq.core.commitlog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tiny.mq.common.constants.BrokerConstants;
+import org.tiny.mq.common.dto.MessageDTO;
 import org.tiny.mq.config.GlobalCache;
 import org.tiny.mq.model.commitlog.TopicModel;
 import org.tiny.mq.model.message.MessageModel;
@@ -40,6 +41,14 @@ public class CommitLogAppenderHandler {
         MessageModel messageModel = new MessageModel();
         messageModel.setContent(content);
         commitLogMMapFileModel.writeContent(messageModel);
+    }
+
+    public void appendMessage(MessageDTO messageDTO) {
+        CommitLogMMapFileModel commitLogMMapFileModel = GlobalCache.getCommitLogMMapFileModelManager().get(messageDTO.getTopic());
+        if (commitLogMMapFileModel == null) {
+            throw new RuntimeException("topic is valid");
+        }
+        commitLogMMapFileModel.writeContent(messageDTO, true);
     }
 
 }

@@ -1,6 +1,5 @@
-package org.tiny.mq.nameserver.eventbus.listener;
+package org.tiny.mq.common.eventbus;
 
-import org.tiny.mq.nameserver.eventbus.event.Event;
 
 public interface Listener<E extends Event> {
     /**

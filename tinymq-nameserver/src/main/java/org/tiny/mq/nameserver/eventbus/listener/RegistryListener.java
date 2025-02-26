@@ -9,6 +9,7 @@ import org.tiny.mq.common.codec.TcpMessage;
 import org.tiny.mq.common.dto.ServiceRegistryRespDTO;
 import org.tiny.mq.common.enums.NameServerResponseCode;
 import org.tiny.mq.common.enums.ReplicationMsgTypeEnum;
+import org.tiny.mq.common.eventbus.Listener;
 import org.tiny.mq.nameserver.config.GlobalConfig;
 import org.tiny.mq.nameserver.enums.ReplicationModeEnum;
 import org.tiny.mq.nameserver.eventbus.event.RegistryEvent;
@@ -41,12 +42,13 @@ public class RegistryListener implements Listener<RegistryEvent> {
         channelHandlerContext.attr(AttributeKey.valueOf("reqId")).set(event.getIPAddr());
         // 记录instance
         ServiceInstance serviceInstance = new ServiceInstance();
+        serviceInstance.setRegistryType(event.getRegistryType());
         serviceInstance.setIp(event.getIp());
         serviceInstance.setPort(event.getPort());
         serviceInstance.setFirstRegistryTime(System.currentTimeMillis());
         // 保存service instance 到内存当中
         GlobalConfig.getServiceInstanceManager().put(serviceInstance);
-        logger.info("nameserver get registry from {}", event.getIPAddr());
+        logger.info("[EVENT][REGISTRY]:{}", JSON.toJSONString(event));
         // 如果是单机架构
         String mode = GlobalConfig.getNameserverConfig().getReplicationMode();
         ReplicationModeEnum replicationMode = ReplicationModeEnum.of(mode);

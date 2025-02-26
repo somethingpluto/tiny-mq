@@ -9,6 +9,7 @@ import org.tiny.mq.core.consumequeue.ConsumeQueueAppendHandler;
 import org.tiny.mq.core.consumequeue.ConsumeQueueConsumeHandler;
 import org.tiny.mq.hook.ShutDoneHook;
 import org.tiny.mq.model.commitlog.TopicModel;
+import org.tiny.mq.netty.broker.BrokerServer;
 import org.tiny.mq.netty.nameserver.NameServerClient;
 
 import java.io.IOException;
@@ -17,7 +18,7 @@ import java.util.List;
 public class BrokerStartUp {
 
     private static final Logger logger = LoggerFactory.getLogger(BrokerStartUp.class);
-    private static final CommitLogAppenderHandler messageAppenderHandler = new CommitLogAppenderHandler();
+    private static final CommitLogAppenderHandler commitLogAppenderHandler = new CommitLogAppenderHandler();
     private static final ConfigPropertiesLoader configPropertiesLoader = new ConfigPropertiesLoader();
     private static final CommitLogPropertiesLoader commitLogPropertiesLoader = new CommitLogPropertiesLoader();
     private static final ConsumeQueueOffsetPropertiesLoader consumeQueueOffsetPropertiesLoader = new ConsumeQueueOffsetPropertiesLoader();
@@ -40,9 +41,10 @@ public class BrokerStartUp {
 
         List<TopicModel> topicConfigList = GlobalCache.getTopicConfigList();
         for (TopicModel topicModel : topicConfigList) {
-            messageAppenderHandler.prepareMMapLoading(topicModel);
+            commitLogAppenderHandler.prepareMMapLoading(topicModel);
             consumeQueueAppendHandler.prepareConsumeQueue(topicModel.getTopicName());
         }
+        GlobalCache.setCommitLogAppenderHandler(commitLogAppenderHandler);
     }
 
     public static void initNameServerChannel() {
@@ -51,70 +53,18 @@ public class BrokerStartUp {
         client.sendRegistryMessage();
     }
 
+    public static void initBrokerServerChannel() throws InterruptedException {
+        BrokerServer brokerServer = new BrokerServer(GlobalCache.getNameServerConfig().getBrokerPort());
+        brokerServer.startServer();
+    }
+
     public static void main(String[] args) throws IOException, InterruptedException {
         Runtime.getRuntime().addShutdownHook(new ShutDoneHook());
         //加载配置 ，缓存对象的生成
         initProperties();
         // 初始化网络连接
         initNameServerChannel();
-        //模拟初始化文件映射
-//        String topic = "user_topic";
-//        String userInfoConsumerGroup = "user_info_consumer";
-//        String orderServiceConsumerGroup = "order_service_group";
-
-//        AtomicInteger i = new AtomicInteger();
-//        new Thread(() -> {
-//            while (true) {
-//                try {
-//                    messageAppenderHandler.appendMessage(topic, ("message_" + (i.getAndIncrement())).getBytes());
-//                    TimeUnit.MILLISECONDS.sleep(10);
-//                } catch (Exception e) {
-//                    throw new RuntimeException(e);
-//                }
-//            }
-//        }).start();
-//
-//        Thread.sleep(10000);
-//        new Thread(() -> {
-//            while (true) {
-//                byte[] content = consumeQueueConsumeHandler.consume(topic, userInfoConsumerGroup, 0);
-//                if (content != null && content.length != 0) {
-//                    System.out.println(userInfoConsumerGroup + ",消费内容:" + new String(content));
-//                    consumeQueueConsumeHandler.ack(topic, userInfoConsumerGroup, 0);
-//                } else {
-//                    try {
-//                        Thread.sleep(1000);
-//                    } catch (InterruptedException e) {
-//                        throw new RuntimeException(e);
-//                    }
-//                }
-//                try {
-//                    Thread.sleep(100);
-//                } catch (InterruptedException e) {
-//                    throw new RuntimeException(e);
-//                }
-//            }
-//        }).start();
-//
-//        new Thread(() -> {
-//            while (true) {
-//                byte[] content = consumeQueueConsumeHandler.consume(topic, orderServiceConsumerGroup, 0);
-//                if (content != null) {
-//                    System.out.println(orderServiceConsumerGroup + ",消费内容:" + new String(content));
-//                    consumeQueueConsumeHandler.ack(topic, orderServiceConsumerGroup, 0);
-//                } else {
-//                    try {
-//                        Thread.sleep(1000);
-//                    } catch (InterruptedException e) {
-//                        throw new RuntimeException(e);
-//                    }
-//                }
-//                try {
-//                    Thread.sleep(100);
-//                } catch (InterruptedException e) {
-//                    throw new RuntimeException(e);
-//                }
-//            }
-//        }).start();
+        // 初始化Broker服务
+        initBrokerServerChannel();
     }
 }

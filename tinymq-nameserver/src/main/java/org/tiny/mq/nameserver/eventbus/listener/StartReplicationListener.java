@@ -4,6 +4,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.AttributeKey;
 import org.tiny.mq.common.codec.TcpMessage;
 import org.tiny.mq.common.enums.MessageTypeEnum;
+import org.tiny.mq.common.eventbus.Listener;
 import org.tiny.mq.nameserver.config.GlobalConfig;
 import org.tiny.mq.nameserver.eventbus.event.StartReplicationEvent;
 import org.tiny.mq.nameserver.utils.NameServerUtils;

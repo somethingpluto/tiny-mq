@@ -1,9 +1,17 @@
 package org.tiny.mq.common.utils;
 
+import java.util.List;
+
 public class AssertUtils {
-    
+
     public static void isNotBlank(String val, String msg) {
         if (val == null || val.trim().isEmpty()) {
+            throw new RuntimeException(msg);
+        }
+    }
+
+    public static void isNotEmpty(List list, String msg) {
+        if (list == null || list.isEmpty()) {
             throw new RuntimeException(msg);
         }
     }

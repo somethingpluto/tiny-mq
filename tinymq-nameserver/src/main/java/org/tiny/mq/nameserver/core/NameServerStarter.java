@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tiny.mq.common.codec.TcpMessageDecoder;
 import org.tiny.mq.common.codec.TcpMessageEncoder;
-import org.tiny.mq.nameserver.eventbus.EventBus;
+import org.tiny.mq.common.eventbus.EventBus;
 import org.tiny.mq.nameserver.handler.TcpNettyServerHandler;
 
 public class NameServerStarter {

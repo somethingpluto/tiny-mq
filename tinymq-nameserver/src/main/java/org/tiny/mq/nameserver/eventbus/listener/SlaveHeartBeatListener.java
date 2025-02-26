@@ -2,6 +2,7 @@ package org.tiny.mq.nameserver.eventbus.listener;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tiny.mq.common.eventbus.Listener;
 import org.tiny.mq.nameserver.eventbus.event.SlaveHeartBeatEvent;
 
 public class SlaveHeartBeatListener implements Listener<SlaveHeartBeatEvent> {

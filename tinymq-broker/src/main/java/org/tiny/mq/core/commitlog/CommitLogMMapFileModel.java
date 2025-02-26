@@ -3,6 +3,7 @@ package org.tiny.mq.core.commitlog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tiny.mq.common.constants.BrokerConstants;
+import org.tiny.mq.common.dto.MessageDTO;
 import org.tiny.mq.config.GlobalCache;
 import org.tiny.mq.core.consumequeue.ConsumeQueueMemoryMapFileModel;
 import org.tiny.mq.model.ModelManager;
@@ -124,6 +125,43 @@ public class CommitLogMMapFileModel {
             appendMessageLock.unlock();
         }
     }
+
+
+    public void writeContent(MessageDTO messageDTO, boolean force) {
+        TopicModel topicModel = GlobalCache.getMQTopicModelMap().get(messageDTO.getTopic());
+        if (topicModel == null) {
+            throw new IllegalArgumentException("topic:" + topicName + "model is null");
+        }
+        CommitLogModel commitLogModel = topicModel.getCommitLogModel();
+        if (commitLogModel == null) {
+            throw new IllegalArgumentException("commitLogModel is null");
+        }
+        MessageModel messageModel = new MessageModel();
+        messageModel.setContent(messageDTO.getBody());
+        try {
+            appendMessageLock.lock();
+            // 1.查看commit log文件是否还有空余空间
+            this.checkCommitLogHasEnablePlace(messageModel);
+            // 2.获取消息的字节数组表述
+            byte[] bytesContent = messageModel.convertToBytes();
+            // 3.消息写入commit log
+            mappedByteBuffer.put(bytesContent);
+            // 4.消息派发到队列
+            this.dispatch(topicModel, bytesContent);
+            // 5.消息指针后移
+            commitLogModel.getOffset().addAndGet(bytesContent.length);
+            if (force) {
+                mappedByteBuffer.force();
+            }
+//            logger.info("{} append message:{}", topicName, messageModel);
+
+        } catch (Exception e) {
+            logger.error("write message error {}", e.toString());
+        } finally {
+            appendMessageLock.unlock();
+        }
+    }
+
 
     /**
      * 新增消息 同步到队列(做索引)

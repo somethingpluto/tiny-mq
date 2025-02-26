@@ -23,8 +23,6 @@ public class HeartBeatTask implements Runnable {
                 NameServerClient client = GlobalCache.getNameServerClient();
                 Channel channel = client.getChannel();
                 HeartBeatDTO heartBeatDTO = new HeartBeatDTO();
-                heartBeatDTO.setBrokerIP(client.getClientIP());
-                heartBeatDTO.setBrokerPort(client.getClientPort());
                 byte[] body = JSON.toJSONBytes(heartBeatDTO);
                 TcpMessage message = new TcpMessage(NameServerEventCode.HEART_BEAT.getCode(), body);
                 channel.writeAndFlush(message);

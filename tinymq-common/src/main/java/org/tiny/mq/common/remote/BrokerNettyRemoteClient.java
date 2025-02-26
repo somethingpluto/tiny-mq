@@ -1,18 +1,16 @@
 package org.tiny.mq.common.remote;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.DelimiterBasedFrameDecoder;
+import org.tiny.mq.common.cache.BrokerServerSyncFutureManager;
+import org.tiny.mq.common.codec.TcpMessage;
 import org.tiny.mq.common.codec.TcpMessageDecoder;
 import org.tiny.mq.common.codec.TcpMessageEncoder;
-import org.tiny.mq.common.constants.TcpConstants;
 
 public class BrokerNettyRemoteClient {
     private String ip;
@@ -31,10 +29,9 @@ public class BrokerNettyRemoteClient {
         bootstrap.group(clientGroup).channel(NioSocketChannel.class).handler(new ChannelInitializer<NioSocketChannel>() {
             @Override
             protected void initChannel(NioSocketChannel nioSocketChannel) throws Exception {
-                ByteBuf delimiter = Unpooled.copiedBuffer(TcpConstants.DEFAULT_DECODE_CHAR.getBytes());
-                nioSocketChannel.pipeline().addLast(new DelimiterBasedFrameDecoder(1024 * 8, delimiter));
                 nioSocketChannel.pipeline().addLast(new TcpMessageDecoder());
                 nioSocketChannel.pipeline().addLast(new TcpMessageEncoder());
+                nioSocketChannel.pipeline().addLast(new BrokerNettyRemoteHandler());
             }
         });
         ChannelFuture channelFuture = null;
@@ -51,5 +48,21 @@ public class BrokerNettyRemoteClient {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public TcpMessage sendSyncMessage(TcpMessage tcpMessage, String msgId) {
+        channel.writeAndFlush(tcpMessage);
+        SyncFuture syncFuture = new SyncFuture();
+        syncFuture.setMsgId(msgId);
+        BrokerServerSyncFutureManager.put(msgId, syncFuture);
+        try {
+            return (TcpMessage) syncFuture.get();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void sendAsyncMsg(TcpMessage tcpMsg) {
+        channel.writeAndFlush(tcpMsg);
     }
 }

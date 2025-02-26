@@ -1,5 +1,6 @@
 package org.tiny.mq.config;
 
+import org.tiny.mq.core.commitlog.CommitLogAppenderHandler;
 import org.tiny.mq.core.commitlog.CommitLogMMapFileModelManager;
 import org.tiny.mq.core.consumequeue.ConsumeQueueMMapFileModelManager;
 import org.tiny.mq.model.ConfigModel;
@@ -20,8 +21,18 @@ public class GlobalCache {
     private static ConsumeQueueOffsetModel consumeQueueOffsetModel;
     private static ConsumeQueueMMapFileModelManager consumeQueueMMapFileModelManager = new ConsumeQueueMMapFileModelManager();
     private static CommitLogMMapFileModelManager commitLogMMapFileModelManager = new CommitLogMMapFileModelManager();
-    private static HeartBeatManager heartBeatManager = new HeartBeatManager();    private static NameServerConfigModel nameServerConfig = NameServerConfigLoader.loadProperties();
+    private static HeartBeatManager heartBeatManager = new HeartBeatManager();
+    private static NameServerConfigModel nameServerConfig = NameServerConfigLoader.loadProperties();
     private static NameServerClient nameServerClient = new NameServerClient();
+    private static CommitLogAppenderHandler commitLogAppenderHandler;
+
+    public static CommitLogAppenderHandler getCommitLogAppenderHandler() {
+        return commitLogAppenderHandler;
+    }
+
+    public static void setCommitLogAppenderHandler(CommitLogAppenderHandler commitLogAppenderHandler) {
+        GlobalCache.commitLogAppenderHandler = commitLogAppenderHandler;
+    }
 
     public static ConfigModel getConfig() {
         return config;

@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tiny.mq.common.codec.TcpMessage;
 import org.tiny.mq.common.enums.NameServerEventCode;
+import org.tiny.mq.common.eventbus.Listener;
 import org.tiny.mq.nameserver.config.GlobalConfig;
 import org.tiny.mq.nameserver.eventbus.event.ReplicationMsgEvent;
 import org.tiny.mq.nameserver.eventbus.event.SlaveReplicationMsgAckEvent;

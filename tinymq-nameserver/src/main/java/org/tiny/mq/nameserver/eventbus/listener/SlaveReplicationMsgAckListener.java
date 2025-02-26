@@ -2,6 +2,7 @@ package org.tiny.mq.nameserver.eventbus.listener;
 
 import org.tiny.mq.common.dto.SlaveAckDTO;
 import org.tiny.mq.common.enums.MessageTypeEnum;
+import org.tiny.mq.common.eventbus.Listener;
 import org.tiny.mq.nameserver.config.GlobalConfig;
 import org.tiny.mq.nameserver.eventbus.event.SlaveReplicationMsgAckEvent;
 

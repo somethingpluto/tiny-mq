@@ -1,13 +1,13 @@
 package org.tiny.mq.common.enums;
 
-public enum BrokerRersponseCode {
+public enum BrokerResponseCode {
     SEND_MSG_RESP(20001, "push message to broker"), CONSUME_MSG_RESP(20002, "consume broker message return data"), BROKER_UPDATE_CONSUME_OFFSET_RESP(20003, "broker update offset");
 
 
     int code;
     String desc;
 
-    BrokerRersponseCode(int code, String desc) {
+    BrokerResponseCode(int code, String desc) {
         this.code = code;
         this.desc = desc;
     }

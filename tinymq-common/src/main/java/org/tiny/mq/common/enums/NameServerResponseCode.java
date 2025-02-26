@@ -5,7 +5,8 @@ public enum NameServerResponseCode {
 
     MASTER_REPLICATION_MSG(20006, "master-slave sync data"), SLAVE_HEART_BEAT(20007, "slave node heat beat"), SLAVE_REPLICATION_ACK_MSG(20008, "slave node success receive replication data"),
 
-    NODE_REPLICATION_MSG(20009, "node replication data"), NODE_REPLICATION_ACK_MSG(20010, "chain replication data sync success"), UNKNOWN_EVENT(20000, "unknown event");
+    NODE_REPLICATION_MSG(20009, "node replication data"), NODE_REPLICATION_ACK_MSG(20010, "chain replication data sync success"), UNKNOWN_EVENT(20000, "unknown event"),
+    PULL_BROKER_ADDRESS_SUCCESS(200010, "pull borker address success");
 
     private int code;
     private String desc;

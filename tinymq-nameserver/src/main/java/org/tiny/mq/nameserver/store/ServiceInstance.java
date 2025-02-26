@@ -5,6 +5,7 @@ import java.util.Map;
 
 public class ServiceInstance {
 
+    private String registryType;
     /**
      * broker IP
      */
@@ -25,6 +26,14 @@ public class ServiceInstance {
      * broker额外信息
      */
     private Map<String, String> attrs = new HashMap<>();
+
+    public String getRegistryType() {
+        return registryType;
+    }
+
+    public void setRegistryType(String registryType) {
+        this.registryType = registryType;
+    }
 
     public String getIp() {
         return ip;
@@ -68,12 +77,6 @@ public class ServiceInstance {
 
     @Override
     public String toString() {
-        return "ServiceInstance{" +
-                "ip='" + ip + '\'' +
-                ", port=" + port +
-                ", firstRegistryTime=" + firstRegistryTime +
-                ", lastHeartBeatTime=" + lastHeartBeatTime +
-                ", attrs=" + attrs +
-                '}';
+        return "ServiceInstance{" + "ip='" + ip + '\'' + ", port=" + port + ", firstRegistryTime=" + firstRegistryTime + ", lastHeartBeatTime=" + lastHeartBeatTime + ", attrs=" + attrs + '}';
     }
 }

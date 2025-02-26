@@ -58,7 +58,7 @@ public class NameServerNettyClient {
         }
     }
 
-    public TcpMessage sendMessage(TcpMessage tcpMessage, String msgId) {
+    public TcpMessage sendSyncMessage(TcpMessage tcpMessage, String msgId) {
         channel.writeAndFlush(tcpMessage);
         SyncFuture syncFuture = new SyncFuture();
         syncFuture.setMsgId(msgId);
@@ -69,5 +69,9 @@ public class NameServerNettyClient {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void sendAsyncMessage(TcpMessage tcpMessage) {
+        channel.writeAndFlush(tcpMessage);
     }
 }

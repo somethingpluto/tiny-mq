@@ -17,6 +17,7 @@ public class NameServerRemoteRespHandler extends SimpleChannelInboundHandler {
         TcpMessage tcpMessage = (TcpMessage) o;
         int code = tcpMessage.getCode();
         byte[] body = tcpMessage.getBody();
+
         if (code == NameServerResponseCode.REGISTRY_SUCCESS.getCode()) {
             ServiceRegistryRespDTO serviceRegistryRespDTO = JSON.parseObject(body, ServiceRegistryRespDTO.class);
             SyncFuture syncFuture = NameServerSyncFutureManager.get(serviceRegistryRespDTO.getMsgId());

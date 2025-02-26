@@ -1,10 +1,8 @@
-package org.tiny.mq.nameserver.eventbus;
+package org.tiny.mq.common.eventbus;
 
 import com.google.common.collect.Lists;
 import org.apache.commons.collections4.CollectionUtils;
 import org.tiny.mq.common.utils.ReflectUtils;
-import org.tiny.mq.nameserver.eventbus.event.Event;
-import org.tiny.mq.nameserver.eventbus.listener.Listener;
 
 import java.util.List;
 import java.util.Map;

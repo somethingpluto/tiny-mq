@@ -9,6 +9,7 @@ import org.tiny.mq.common.codec.TcpMessage;
 import org.tiny.mq.common.dto.HeartBeatDTO;
 import org.tiny.mq.common.dto.ServiceRegistryRespDTO;
 import org.tiny.mq.common.enums.NameServerResponseCode;
+import org.tiny.mq.common.eventbus.Listener;
 import org.tiny.mq.nameserver.config.GlobalConfig;
 import org.tiny.mq.nameserver.eventbus.event.HeartBeatEvent;
 import org.tiny.mq.nameserver.store.ServiceInstance;
@@ -38,8 +39,7 @@ public class HeartBeatListener implements Listener<HeartBeatEvent> {
         serviceInstance.setPort(Integer.valueOf(brokerInfoArr[1]));
         serviceInstance.setLastHeartBeatTime(currentTimestamp);
         GlobalConfig.getServiceInstanceManager().putIfExist(serviceInstance);
-        logger.info("accept heart beat from {}:{}", brokerInfoArr[0], brokerInfoArr[1]);
-        // 心跳信息更新完后 给client回复
+        logger.info("[EVENT][HEART-BEAT]:{}", JSON.toJSONString(event));
         HeartBeatDTO heartBeatDTO = new HeartBeatDTO();
         heartBeatDTO.setMsgId(event.getMsgId());
         TcpMessage tcpMessage = new TcpMessage(NameServerResponseCode.HEART_BEAT_SUCCESS.getCode(), JSON.toJSONBytes(heartBeatDTO));

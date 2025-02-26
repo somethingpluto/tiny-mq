@@ -5,13 +5,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tiny.mq.common.codec.TcpMessage;
 import org.tiny.mq.common.dto.HeartBeatDTO;
+import org.tiny.mq.common.dto.PullBrokerIpReqDTO;
+import org.tiny.mq.common.dto.PullBrokerIpRespDTO;
 import org.tiny.mq.common.dto.ServiceRegistryReqDTO;
 import org.tiny.mq.common.enums.NameServerEventCode;
 import org.tiny.mq.common.enums.NameServerResponseCode;
 import org.tiny.mq.common.enums.RegistryTypeEnum;
+import org.tiny.mq.common.remote.BrokerNettyRemoteClient;
 import org.tiny.mq.common.remote.NameServerNettyClient;
+import org.tiny.mq.common.utils.AssertUtils;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -23,10 +30,28 @@ public class DefaultProducer {
     private String nameserverPassword;
 
     private NameServerNettyClient nameServerNettyClient;
+    private List<String> brokerAddressList;
+    private Map<String, BrokerNettyRemoteClient> brokerNettyRemoteClientMap = new ConcurrentHashMap<>();
     private static Logger logger = LoggerFactory.getLogger(DefaultProducer.class);
 
     public DefaultProducer() {
 
+    }
+
+    public List<String> getBrokerAddressList() {
+        return brokerAddressList;
+    }
+
+    public void setBrokerAddressList(List<String> brokerAddressList) {
+        this.brokerAddressList = brokerAddressList;
+    }
+
+    public Map<String, BrokerNettyRemoteClient> getBrokerNettyRemoteClientMap() {
+        return brokerNettyRemoteClientMap;
+    }
+
+    public void setBrokerNettyRemoteClientMap(Map<String, BrokerNettyRemoteClient> brokerNettyRemoteClientMap) {
+        this.brokerNettyRemoteClientMap = brokerNettyRemoteClientMap;
     }
 
     public DefaultProducer(String nameserverIp, Integer nameserverPort, String nameserverUser, String nameserverPassword) {
@@ -74,6 +99,8 @@ public class DefaultProducer {
         boolean isRegistrySuccess = this.doRegistry();
         if (isRegistrySuccess) {
             startHeartBeatTask();
+            fetchBrokerAddress();
+            connectBroker();
         }
     }
 
@@ -85,7 +112,7 @@ public class DefaultProducer {
         serviceRegistryReqDTO.setUser(nameserverUser);
         serviceRegistryReqDTO.setPassword(nameserverPassword);
         TcpMessage tcpMessage = new TcpMessage(NameServerEventCode.REGISTRY.getCode(), JSON.toJSONBytes(serviceRegistryReqDTO));
-        TcpMessage registryResponse = nameServerNettyClient.sendMessage(tcpMessage, msgId);
+        TcpMessage registryResponse = nameServerNettyClient.sendSyncMessage(tcpMessage, msgId);
         if (NameServerResponseCode.REGISTRY_SUCCESS.getCode() == registryResponse.getCode()) {
             logger.debug("registry success to nameserver {}:{}", nameserverIp, nameserverPort);
             return true;
@@ -106,7 +133,7 @@ public class DefaultProducer {
                     String msgId = UUID.randomUUID().toString();
                     heartBeatDTO.setMsgId(msgId);
                     TcpMessage tcpMessage = new TcpMessage(NameServerEventCode.HEART_BEAT.getCode(), JSON.toJSONBytes(heartBeatDTO));
-                    TcpMessage heatBeatResponse = nameServerNettyClient.sendMessage(tcpMessage, msgId);
+                    TcpMessage heatBeatResponse = nameServerNettyClient.sendSyncMessage(tcpMessage, msgId);
                     logger.info("heat beat response");
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -118,4 +145,28 @@ public class DefaultProducer {
     private void startHeartBeatTask() {
         heartBeatTask();
     }
+
+    public void fetchBrokerAddress() {
+        String msgId = UUID.randomUUID().toString();
+        PullBrokerIpReqDTO pullBrokerIpDTO = new PullBrokerIpReqDTO();
+        pullBrokerIpDTO.setRole("single");
+        pullBrokerIpDTO.setMsgId(msgId);
+        TcpMessage tcpMessage = new TcpMessage(NameServerEventCode.PULL_BROKER_IP_LIST.getCode(), JSON.toJSONBytes(pullBrokerIpDTO));
+        TcpMessage pullBrokerResponse = nameServerNettyClient.sendSyncMessage(tcpMessage, msgId);
+        PullBrokerIpRespDTO pullBrokerIpRespDTO = JSON.parseObject(pullBrokerResponse.getBody(), PullBrokerIpRespDTO.class);
+        this.setBrokerAddressList(pullBrokerIpRespDTO.getAddressList());
+        logger.info("fetch Broker Address:{}", pullBrokerIpRespDTO.getAddressList());
+    }
+
+    private void connectBroker() {
+        AssertUtils.isNotEmpty(this.getBrokerAddressList(), "broker地址不能为空");
+        for (String brokerIp : brokerAddressList) {
+            String[] brokerAddressArr = brokerIp.split(":");
+            BrokerNettyRemoteClient brokerNettyRemoteClient = new BrokerNettyRemoteClient(brokerAddressArr[0],
+                    Integer.valueOf(brokerAddressArr[1]));
+            brokerNettyRemoteClient.buildConnection();
+            this.getBrokerNettyRemoteClientMap().put(brokerIp, brokerNettyRemoteClient);
+        }
+    }
+
 }

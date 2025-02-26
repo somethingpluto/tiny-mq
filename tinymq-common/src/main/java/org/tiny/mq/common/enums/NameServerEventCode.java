@@ -15,7 +15,8 @@ public enum NameServerEventCode {
     SLAVE_HEART_BEAT(10007, "slave node heart beat"),
     SLAVE_REPLICATION_ACK_MSG(10008, "slave node sync master data success"),
     NODE_REPLICATION_MSG(10009, "slave node replication data"),
-    NODE_REPLICATION_ACK_MSG(10010, "chain replicaiton data success");
+    NODE_REPLICATION_ACK_MSG(10010, "chain replicaiton data success"),
+    PULL_BROKER_IP_LIST(10011, "pull broker ip list");
 
     private int code;
     private String desc;
