@@ -14,13 +14,17 @@ import org.slf4j.LoggerFactory;
 import org.tiny.mq.common.codec.TcpMessage;
 import org.tiny.mq.common.codec.TcpMessageDecoder;
 import org.tiny.mq.common.codec.TcpMessageEncoder;
-import org.tiny.mq.common.dto.RegistryDTO;
+import org.tiny.mq.common.dto.ServiceRegistryReqDTO;
 import org.tiny.mq.common.enums.NameServerEventCode;
+import org.tiny.mq.common.enums.RegistryTypeEnum;
 import org.tiny.mq.config.GlobalCache;
 import org.tiny.mq.model.nameserver.NameServerConfigModel;
 
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * 与NameServer服务端建立连接
@@ -85,14 +89,20 @@ public class NameServerClient {
     }
 
     public void sendRegistryMessage() {
-        RegistryDTO registryDTO = new RegistryDTO();
+        ServiceRegistryReqDTO serviceRegistryReqDTO = new ServiceRegistryReqDTO();
         try {
-            registryDTO.setBrokerIP(this.clientIP);
+            Map<String, Object> attrs = new HashMap<>();
+            //todo 先写死
+            attrs.put("role", "single");
             NameServerConfigModel nameServerConfig = GlobalCache.getNameServerConfig();
-            registryDTO.setBrokerPort(nameServerConfig.getBrokerPort());
-            registryDTO.setUser(nameServerConfig.getNameserverUser());
-            registryDTO.setPassword(nameServerConfig.getNameServerPassword());
-            byte[] body = JSON.toJSONBytes(registryDTO);
+            serviceRegistryReqDTO.setIp(this.clientIP);
+            serviceRegistryReqDTO.setPort(nameServerConfig.getBrokerPort());
+            serviceRegistryReqDTO.setUser(nameServerConfig.getNameserverUser());
+            serviceRegistryReqDTO.setPassword(nameServerConfig.getNameServerPassword());
+            serviceRegistryReqDTO.setRegistryType(RegistryTypeEnum.BROKER.getType());
+            serviceRegistryReqDTO.setAttrs(attrs);
+            serviceRegistryReqDTO.setMsgId(UUID.randomUUID().toString());
+            byte[] body = JSON.toJSONBytes(serviceRegistryReqDTO);
             TcpMessage message = new TcpMessage(NameServerEventCode.REGISTRY.getCode(), body);
             channel.writeAndFlush(message);
             logger.info("{}:{} send register request to nameserver{}:{}", this.clientIP, this.clientPort, nameServerConfig.getNameserverIP(), nameServerConfig.getNameserverPort());

@@ -29,7 +29,7 @@ public class NameServerRespChannelHandler extends SimpleChannelInboundHandler {
             // 登录失败
             throw new RuntimeException("error nameserver user or password");
         } else if (code == NameServerResponseCode.HEART_BEAT_SUCCESS.getCode()) {
-            // TODO: 心跳成功ACK
+            logger.info("broker nameserve heartbeat success");
         }
     }
 

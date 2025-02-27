@@ -14,6 +14,10 @@ public class ServiceRegistryReqDTO extends BaseNameServerRemoteDTO {
     private Integer port;
     private Map<String, Object> attrs = new HashMap<>();
 
+    public void setPort(Integer port) {
+        this.port = port;
+    }
+
     public String getRegistryType() {
         return registryType;
     }

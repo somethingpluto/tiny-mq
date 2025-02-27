@@ -37,14 +37,14 @@ public class SyncFuture implements Future {
     @Override
     public Object get() throws InterruptedException, ExecutionException {
         countDownLatch.await();
-        NameServerSyncFutureManager.remove(getMsgId());
+        NameServerSyncFutureManager.remove(msgId);
         return response;
     }
 
     @Override
     public Object get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
         countDownLatch.await(timeout, unit);
-        NameServerSyncFutureManager.remove(getMsgId());
+        NameServerSyncFutureManager.remove(msgId);
         return response;
     }
 

@@ -10,6 +10,7 @@ import org.tiny.mq.common.enums.NameServerEventCode;
 import org.tiny.mq.config.GlobalCache;
 import org.tiny.mq.netty.nameserver.NameServerClient;
 
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public class HeartBeatTask implements Runnable {
@@ -23,6 +24,8 @@ public class HeartBeatTask implements Runnable {
                 NameServerClient client = GlobalCache.getNameServerClient();
                 Channel channel = client.getChannel();
                 HeartBeatDTO heartBeatDTO = new HeartBeatDTO();
+                String msgId = UUID.randomUUID().toString();
+                heartBeatDTO.setMsgId(msgId);
                 byte[] body = JSON.toJSONBytes(heartBeatDTO);
                 TcpMessage message = new TcpMessage(NameServerEventCode.HEART_BEAT.getCode(), body);
                 channel.writeAndFlush(message);

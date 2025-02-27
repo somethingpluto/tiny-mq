@@ -99,8 +99,8 @@ public class DefaultProducer {
         boolean isRegistrySuccess = this.doRegistry();
         if (isRegistrySuccess) {
             startHeartBeatTask();
-            fetchBrokerAddress();
-            connectBroker();
+/*            fetchBrokerAddress();
+            connectBroker();*/
         }
     }
 
