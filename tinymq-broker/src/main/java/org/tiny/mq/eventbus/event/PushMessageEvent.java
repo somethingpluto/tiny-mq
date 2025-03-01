@@ -13,4 +13,11 @@ public class PushMessageEvent extends Event {
     public void setMessageDTO(MessageDTO messageDTO) {
         this.messageDTO = messageDTO;
     }
+
+    @Override
+    public String toString() {
+        return "PushMessageEvent{" +
+                "messageDTO=" + messageDTO +
+                "} " + super.toString();
+    }
 }

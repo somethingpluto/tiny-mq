@@ -13,4 +13,11 @@ public class ConsumeMessageEvent extends Event {
     public void setConsumeMsgReqDTO(ConsumeMsgReqDTO consumeMsgReqDTO) {
         this.consumeMsgReqDTO = consumeMsgReqDTO;
     }
+
+    @Override
+    public String toString() {
+        return "ConsumeMessageEvent{" +
+                "consumeMsgReqDTO=" + consumeMsgReqDTO +
+                "} " + super.toString();
+    }
 }
