@@ -74,14 +74,15 @@ public class TcpNettyServerHandler extends SimpleChannelInboundHandler {
         pullBrokerIPListEvent.setMsgId(pullBrokerIpReqDTO.getMsgId());
         return pullBrokerIPListEvent;
     }
- 
 
-    public RegistryEvent handleRegistryEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {
+
+    private RegistryEvent handleRegistryEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {
         ServiceRegistryReqDTO serviceRegistryReqDTO = JSON.parseObject(body, ServiceRegistryReqDTO.class);
         RegistryEvent registryEvent = new RegistryEvent();
         registryEvent.setMsgId(serviceRegistryReqDTO.getMsgId());
         registryEvent.setUser(serviceRegistryReqDTO.getUser());
         registryEvent.setPassword(serviceRegistryReqDTO.getPassword());
+        registryEvent.setRegistryType(serviceRegistryReqDTO.getRegistryType());
         if (StringUtil.isNullOrEmpty(serviceRegistryReqDTO.getIp())) {
             InetSocketAddress inetSocketAddress = (InetSocketAddress) channelHandlerContext.channel().remoteAddress();
             registryEvent.setPort(inetSocketAddress.getPort());
@@ -90,23 +91,23 @@ public class TcpNettyServerHandler extends SimpleChannelInboundHandler {
             registryEvent.setPort(serviceRegistryReqDTO.getPort());
             registryEvent.setIp(serviceRegistryReqDTO.getIp());
         }
-        registryEvent.setRegistryType(serviceRegistryReqDTO.getRegistryType());
         return registryEvent;
     }
 
-    public HeartBeatEvent handleHeartBeatEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {
+    private HeartBeatEvent handleHeartBeatEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {
         HeartBeatDTO heartBeatDTO = JSON.parseObject(body, HeartBeatDTO.class);
         HeartBeatEvent heartBeatEvent = new HeartBeatEvent();
+        System.out.println("handle heart beat event:" + heartBeatDTO.getMsgId());
         heartBeatEvent.setMsgId(heartBeatDTO.getMsgId());
         return heartBeatEvent;
     }
 
-    public UnRegistryEvent handleUnRegistryEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {
+    private UnRegistryEvent handleUnRegistryEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {
         UnRegistryEvent event = JSON.parseObject(body, UnRegistryEvent.class);
         return event;
     }
 
-    public void handleUnknownEvent(ChannelHandlerContext channelHandlerContext) {
+    private void handleUnknownEvent(ChannelHandlerContext channelHandlerContext) {
         TcpMessage unknownMessage = new TcpMessage(NameServerResponseCode.UNKNOWN_EVENT.getCode(), NameServerResponseCode.UNKNOWN_EVENT.getDesc().getBytes());
         channelHandlerContext.writeAndFlush(unknownMessage);
         channelHandlerContext.close();

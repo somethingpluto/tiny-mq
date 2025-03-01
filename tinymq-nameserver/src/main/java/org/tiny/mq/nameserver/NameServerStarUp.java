@@ -9,6 +9,7 @@ import org.tiny.mq.nameserver.enums.ReplicationRoleEnum;
 import org.tiny.mq.nameserver.model.NameServerConfigModel;
 import org.tiny.mq.nameserver.model.TraceReplicationConfigModel;
 import org.tiny.mq.nameserver.replication.*;
+import org.tiny.mq.nameserver.task.LogSysStatusTask;
 import org.tiny.mq.nameserver.task.ServiceInstanceRemoveTask;
 
 import java.io.IOException;
@@ -18,6 +19,8 @@ public class NameServerStarUp {
     private static final ConfigLoader configLoader = new ConfigLoader();
     private static final ReplicationService replicationService = new ReplicationService();
     private static NameServerStarter nameServerStarter = null;
+
+    private static LogSysStatusTask logSysStatusTask = new LogSysStatusTask();
 
     private static void initReplication() {
         // 复制逻辑初始化
@@ -61,6 +64,7 @@ public class NameServerStarUp {
         // 链路复制: slave角色开启一个额外的进程->master连接slave
         initReplication();
         initInvalidServerRemoveTask();
+        logSysStatusTask.start();
         nameServerStarter = new NameServerStarter(nameserverConfig.getNameserverPort());
         nameServerStarter.startServer();
     }

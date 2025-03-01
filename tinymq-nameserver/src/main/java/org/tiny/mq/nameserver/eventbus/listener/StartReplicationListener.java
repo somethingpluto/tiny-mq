@@ -2,6 +2,8 @@ package org.tiny.mq.nameserver.eventbus.listener;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.AttributeKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tiny.mq.common.codec.TcpMessage;
 import org.tiny.mq.common.enums.MessageTypeEnum;
 import org.tiny.mq.common.eventbus.Listener;
@@ -15,8 +17,11 @@ import java.net.InetSocketAddress;
  * 主从复制开启事件处理器
  */
 public class StartReplicationListener implements Listener<StartReplicationEvent> {
+    private static final Logger logger = LoggerFactory.getLogger(StartReplicationListener.class);
+
     @Override
     public void onReceive(StartReplicationEvent event) throws IllegalAccessException {
+        logger.info("[EVENT][Start Replication]:{}", event);
         boolean isVerify = NameServerUtils.isVerify(event.getUser(), event.getPassword());
         ChannelHandlerContext channelHandlerContext = event.getChannelHandlerContext();
         if (!isVerify) {

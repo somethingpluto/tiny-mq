@@ -50,5 +50,14 @@ public class ConsumeMsgReqDTO extends BaseBrokerRemoteDTO {
         this.batchSize = batchSize;
     }
 
-
+    @Override
+    public String toString() {
+        return "ConsumeMsgReqDTO{" +
+                "topic='" + topic + '\'' +
+                ", consumerGroup='" + consumerGroup + '\'' +
+                ", ip='" + ip + '\'' +
+                ", port=" + port +
+                ", batchSize=" + batchSize +
+                "} " + super.toString();
+    }
 }

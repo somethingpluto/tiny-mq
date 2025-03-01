@@ -14,4 +14,11 @@ public class NodeAckDTO implements Serializable {
     public void setChannelHandlerContext(ChannelHandlerContext channelHandlerContext) {
         this.channelHandlerContext = channelHandlerContext;
     }
+
+    @Override
+    public String toString() {
+        return "NodeAckDTO{" +
+                "channelHandlerContext=" + channelHandlerContext +
+                '}';
+    }
 }

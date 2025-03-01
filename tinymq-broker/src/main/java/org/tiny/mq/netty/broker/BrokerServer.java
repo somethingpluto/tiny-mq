@@ -1,6 +1,7 @@
 package org.tiny.mq.netty.broker;
 
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -34,12 +35,12 @@ public class BrokerServer {
         serverBootstrap = new ServerBootstrap();
         serverBootstrap.group(bossGroup, workerGroup);
         serverBootstrap.channel(NioServerSocketChannel.class);
-        serverBootstrap.childHandler(new ChannelInitializer<NioServerSocketChannel>() {
+        serverBootstrap.childHandler(new ChannelInitializer<Channel>() {
             @Override
-            protected void initChannel(NioServerSocketChannel nioServerSocketChannel) throws Exception {
-                nioServerSocketChannel.pipeline().addLast(new TcpMessageDecoder());
-                nioServerSocketChannel.pipeline().addLast(new TcpMessageEncoder());
-                nioServerSocketChannel.pipeline().addLast(new BrokerServerHandler(new EventBus("broker-event-bus")));
+            protected void initChannel(Channel channel) throws Exception {
+                channel.pipeline().addLast(new TcpMessageDecoder());
+                channel.pipeline().addLast(new TcpMessageEncoder());
+                channel.pipeline().addLast(new BrokerServerHandler(new EventBus("broker-event-bus")));
             }
         });
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {

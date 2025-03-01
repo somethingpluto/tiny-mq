@@ -20,7 +20,7 @@ public class HeartBeatTask implements Runnable {
     public void run() {
         while (true) {
             try {
-                TimeUnit.SECONDS.sleep(3);
+                TimeUnit.SECONDS.sleep(2);
                 NameServerClient client = GlobalCache.getNameServerClient();
                 Channel channel = client.getChannel();
                 HeartBeatDTO heartBeatDTO = new HeartBeatDTO();

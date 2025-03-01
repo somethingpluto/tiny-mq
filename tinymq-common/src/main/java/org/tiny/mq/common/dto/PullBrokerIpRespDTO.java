@@ -12,4 +12,11 @@ public class PullBrokerIpRespDTO extends BaseBrokerRemoteDTO {
     public void setAddressList(List<String> addressList) {
         this.addressList = addressList;
     }
+
+    @Override
+    public String toString() {
+        return "PullBrokerIpRespDTO{" +
+                "addressList=" + addressList +
+                "} " + super.toString();
+    }
 }

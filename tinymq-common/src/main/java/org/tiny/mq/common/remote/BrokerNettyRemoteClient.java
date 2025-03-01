@@ -52,8 +52,7 @@ public class BrokerNettyRemoteClient {
 
     public TcpMessage sendSyncMessage(TcpMessage tcpMessage, String msgId) {
         channel.writeAndFlush(tcpMessage);
-        SyncFuture syncFuture = new SyncFuture();
-        syncFuture.setMsgId(msgId);
+        SyncFuture syncFuture = new SyncFuture(msgId);
         BrokerServerSyncFutureManager.put(msgId, syncFuture);
         try {
             return (TcpMessage) syncFuture.get();

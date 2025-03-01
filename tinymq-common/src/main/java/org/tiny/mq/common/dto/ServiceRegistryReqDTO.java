@@ -61,4 +61,16 @@ public class ServiceRegistryReqDTO extends BaseNameServerRemoteDTO {
     public void setAttrs(Map<String, Object> attrs) {
         this.attrs = attrs;
     }
+
+    @Override
+    public String toString() {
+        return "ServiceRegistryReqDTO{" +
+                "registryType='" + registryType + '\'' +
+                ", user='" + user + '\'' +
+                ", password='" + password + '\'' +
+                ", ip='" + ip + '\'' +
+                ", port=" + port +
+                ", attrs=" + attrs +
+                "} " + super.toString();
+    }
 }

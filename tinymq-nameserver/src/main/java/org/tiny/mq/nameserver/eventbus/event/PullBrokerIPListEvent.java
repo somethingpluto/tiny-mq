@@ -12,4 +12,11 @@ public class PullBrokerIPListEvent extends Event {
     public void setRole(String role) {
         this.role = role;
     }
+
+    @Override
+    public String toString() {
+        return "PullBrokerIPListEvent{" +
+                "role='" + role + '\'' +
+                "} " + super.toString();
+    }
 }

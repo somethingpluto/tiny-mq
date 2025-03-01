@@ -30,4 +30,13 @@ public class NodeReplicationAckMsgEvent extends Event {
     public void setNodePort(Integer nodePort) {
         this.nodePort = nodePort;
     }
+
+    @Override
+    public String toString() {
+        return "NodeReplicationAckMsgEvent{" +
+                "type=" + type +
+                ", nodeIP='" + nodeIP + '\'' +
+                ", nodePort=" + nodePort +
+                "} " + super.toString();
+    }
 }

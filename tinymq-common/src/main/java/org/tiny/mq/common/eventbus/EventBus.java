@@ -17,17 +17,11 @@ public class EventBus {
     private static final Map<Class<? extends Event>, List<Listener>> eventListenerMap = new ConcurrentHashMap<>();
     private String taskName = "event-bus-task-";
 
-    private final ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(
-            10,
-            100,
-            3,
-            TimeUnit.SECONDS,
-            new ArrayBlockingQueue<>(1000),
-            r -> {
-                Thread thread = new Thread(r);
-                thread.setName(taskName + UUID.randomUUID());
-                return thread;
-            });
+    private final ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(10, 100, 3, TimeUnit.SECONDS, new ArrayBlockingQueue<>(1000), r -> {
+        Thread thread = new Thread(r);
+        thread.setName(taskName + UUID.randomUUID());
+        return thread;
+    });
 
 
     public EventBus(String taskName) {
@@ -41,6 +35,7 @@ public class EventBus {
             Class clazz = ReflectUtils.getInterfaceT(listener, 0);
             this.register(clazz, listener);
         }
+        System.out.println(eventListenerMap);
     }
 
     public <E extends Event> void register(Class<? extends Event> clazz, Listener<E> listener) {
@@ -51,6 +46,8 @@ public class EventBus {
             listeners.add(listener);
             eventListenerMap.put(clazz, listeners);
         }
+        System.out.println(listeners);
+
     }
 
     public void publish(Event event) {

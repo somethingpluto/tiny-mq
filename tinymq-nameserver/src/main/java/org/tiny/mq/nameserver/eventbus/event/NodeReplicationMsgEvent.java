@@ -22,4 +22,12 @@ public class NodeReplicationMsgEvent extends Event {
     public void setServiceInstance(ServiceInstance serviceInstance) {
         this.serviceInstance = serviceInstance;
     }
+
+    @Override
+    public String toString() {
+        return "NodeReplicationMsgEvent{" +
+                "type=" + type +
+                ", serviceInstance=" + serviceInstance +
+                "} " + super.toString();
+    }
 }

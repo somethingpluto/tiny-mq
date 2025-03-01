@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class GlobalConfig {
+
     private static final ReplicationMsgQueueManager replicationMsgQueueManager = new ReplicationMsgQueueManager();
     private static final Map<String, NodeAckDTO> nodeAckMap = new ConcurrentHashMap<>();
     private static final Map<String, SlaveAckDTO> ackMap = new ConcurrentHashMap<>();
@@ -100,4 +101,5 @@ public class GlobalConfig {
     public static ReplicationMsgQueueManager getReplicationMsgQueueManager() {
         return replicationMsgQueueManager;
     }
+
 }

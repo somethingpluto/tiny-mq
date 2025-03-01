@@ -21,6 +21,7 @@ public class NodeReplicationMsgListener implements Listener<NodeReplicationMsgEv
 
     @Override
     public void onReceive(NodeReplicationMsgEvent event) throws IllegalAccessException {
+        logger.info("[EVENT][Node Replication]:{}", event);
         ServiceInstance serviceInstance = event.getServiceInstance();
         // 接收上一个节点同步过来的数据
         GlobalConfig.getServiceInstanceManager().put(serviceInstance);
@@ -28,7 +29,6 @@ public class NodeReplicationMsgListener implements Listener<NodeReplicationMsgEv
         replicationMsgEvent.setServiceInstance(serviceInstance);
         replicationMsgEvent.setMsgId(event.getMsgId());
         replicationMsgEvent.setType(event.getType());
-        logger.info("accept upper node message data:{}", JSON.toJSONBytes(replicationMsgEvent));
         GlobalConfig.getReplicationMsgQueueManager().put(replicationMsgEvent);
         TraceReplicationConfigModel traceReplicationConfig = GlobalConfig.getNameserverConfig().getTraceReplicationConfigModel();
         // 如果是非尾节点

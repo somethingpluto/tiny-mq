@@ -10,4 +10,11 @@ public class BaseNameServerRemoteDTO {
     public void setMsgId(String msgId) {
         this.msgId = msgId;
     }
+
+    @Override
+    public String toString() {
+        return "BaseNameServerRemoteDTO{" +
+                "msgId='" + msgId + '\'' +
+                '}';
+    }
 }

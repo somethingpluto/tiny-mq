@@ -11,6 +11,10 @@ public class SyncFuture implements Future {
     private String msgId;
     private CountDownLatch countDownLatch = new CountDownLatch(1);
 
+    public SyncFuture(String msgId) {
+        this.msgId = msgId;
+    }
+
     public String getMsgId() {
         return msgId;
     }
@@ -45,10 +49,6 @@ public class SyncFuture implements Future {
     public Object get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
         countDownLatch.await(timeout, unit);
         NameServerSyncFutureManager.remove(msgId);
-        return response;
-    }
-
-    public Object getResponse() {
         return response;
     }
 

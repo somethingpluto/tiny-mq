@@ -60,8 +60,7 @@ public class NameServerNettyClient {
 
     public TcpMessage sendSyncMessage(TcpMessage tcpMessage, String msgId) {
         channel.writeAndFlush(tcpMessage);
-        SyncFuture syncFuture = new SyncFuture();
-        syncFuture.setMsgId(msgId);
+        SyncFuture syncFuture = new SyncFuture(msgId);
         NameServerSyncFutureManager.put(msgId, syncFuture);
         try {
             // 阻塞 直到返回结果

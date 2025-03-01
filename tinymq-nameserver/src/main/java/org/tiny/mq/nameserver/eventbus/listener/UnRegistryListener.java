@@ -18,10 +18,10 @@ public class UnRegistryListener implements Listener<UnRegistryEvent> {
 
     @Override
     public void onReceive(UnRegistryEvent event) throws IllegalAccessException {
+        logger.info("[EVENT][Un Registry]:{}", event);
         ChannelHandlerContext channelHandlerContext = event.getChannelHandlerContext();
         Object reqId = channelHandlerContext.attr(AttributeKey.valueOf("reqId")).get();
         String reqIdentify = (String) reqId;
-        logger.info("un registry broker {}", reqIdentify);
         if (reqIdentify == null) {
             TcpMessage message = MessageTypeEnum.ERROR_USER_MESSAGE.getTcpMessage();
             channelHandlerContext.writeAndFlush(message);

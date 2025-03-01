@@ -80,7 +80,6 @@ public class CommitLogPropertiesLoader {
             do {
                 try {
                     TimeUnit.SECONDS.sleep(BrokerConstants.DEFAULT_REFRESH_MQ_TOPIC_TIME_SETP);
-                    logger.info("disk refresh");
                     List<TopicModel> topicConfigList = GlobalCache.getTopicConfigList();
                     FileContentUtil.overWriteToFile(filePath, JSON.toJSONString(topicConfigList, SerializerFeature.PrettyFormat));
                 } catch (InterruptedException e) {

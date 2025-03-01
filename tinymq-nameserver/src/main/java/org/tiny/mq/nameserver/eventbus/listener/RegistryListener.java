@@ -27,6 +27,7 @@ public class RegistryListener implements Listener<RegistryEvent> {
 
     @Override
     public void onReceive(RegistryEvent event) throws IllegalAccessException {
+        logger.info("[EVENT][Registry]:{}", event);
         String user = event.getUser();
         String password = event.getPassword();
         ChannelHandlerContext channelHandlerContext = event.getChannelHandlerContext();
@@ -46,10 +47,7 @@ public class RegistryListener implements Listener<RegistryEvent> {
         serviceInstance.setIp(event.getIp());
         serviceInstance.setPort(event.getPort());
         serviceInstance.setFirstRegistryTime(System.currentTimeMillis());
-        // 保存service instance 到内存当中
         GlobalConfig.getServiceInstanceManager().put(serviceInstance);
-        logger.info("[EVENT][REGISTRY]:{}", JSON.toJSONString(event));
-        // 如果是单机架构
         String mode = GlobalConfig.getNameserverConfig().getReplicationMode();
         ReplicationModeEnum replicationMode = ReplicationModeEnum.of(mode);
         // 单机模式注册成功直接返回

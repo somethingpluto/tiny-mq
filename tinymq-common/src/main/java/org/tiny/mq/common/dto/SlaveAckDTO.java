@@ -31,4 +31,12 @@ public class SlaveAckDTO implements Serializable {
     public void setBrokerChannel(ChannelHandlerContext brokerChannel) {
         this.brokerChannel = brokerChannel;
     }
+
+    @Override
+    public String toString() {
+        return "SlaveAckDTO{" +
+                "needAckTime=" + needAckTime +
+                ", brokerChannel=" + brokerChannel +
+                '}';
+    }
 }

@@ -10,4 +10,11 @@ public class BaseBrokerRemoteDTO {
     public void setMsgId(String msgId) {
         this.msgId = msgId;
     }
+
+    @Override
+    public String toString() {
+        return "BaseBrokerRemoteDTO{" +
+                "msgId='" + msgId + '\'' +
+                '}';
+    }
 }

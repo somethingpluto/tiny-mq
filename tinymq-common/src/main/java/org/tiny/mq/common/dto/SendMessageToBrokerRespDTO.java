@@ -10,4 +10,11 @@ public class SendMessageToBrokerRespDTO extends BaseBrokerRemoteDTO {
     public void setStatus(int status) {
         this.status = status;
     }
+
+    @Override
+    public String toString() {
+        return "SendMessageToBrokerRespDTO{" +
+                "status=" + status +
+                "} " + super.toString();
+    }
 }

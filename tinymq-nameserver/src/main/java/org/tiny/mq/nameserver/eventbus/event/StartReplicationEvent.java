@@ -44,4 +44,14 @@ public class StartReplicationEvent extends Event {
     public String getSlaveIPAddr() {
         return slaveIP + ":" + slavePort;
     }
+
+    @Override
+    public String toString() {
+        return "StartReplicationEvent{" +
+                "user='" + user + '\'' +
+                ", password='" + password + '\'' +
+                ", slaveIP='" + slaveIP + '\'' +
+                ", slavePort=" + slavePort +
+                "} " + super.toString();
+    }
 }

@@ -42,7 +42,6 @@ public class ConsumeQueueOffsetPropertiesLoader {
                         TimeUnit.SECONDS.sleep(BrokerConstants.DEFAULT_REFRESH_CONSUME_QUEUE_OFFSET_TIME_STEP);
                         ConsumeQueueOffsetModel consumeQueueOffsetModel = GlobalCache.getConsumeQueueOffsetModel();
                         FileContentUtil.overWriteToFile(filePath, JSON.toJSONString(consumeQueueOffsetModel, SerializerFeature.PrettyFormat));
-                        logger.info("consume queue offset refresh to disk");
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }

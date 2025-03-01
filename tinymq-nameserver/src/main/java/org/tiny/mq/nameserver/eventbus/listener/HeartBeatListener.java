@@ -20,6 +20,7 @@ public class HeartBeatListener implements Listener<HeartBeatEvent> {
 
     @Override
     public void onReceive(HeartBeatEvent event) throws IllegalAccessException {
+        logger.info("[EVENT][Heart Beart]:{}", event);
         ChannelHandlerContext channelHandlerContext = event.getChannelHandlerContext();
         Object reqId = channelHandlerContext.attr(AttributeKey.valueOf("reqId")).get();
         if (reqId == null) {
@@ -33,13 +34,11 @@ public class HeartBeatListener implements Listener<HeartBeatEvent> {
         // 更新保存的信息
         String brokerIdentifyStr = (String) reqId;
         String[] brokerInfoArr = brokerIdentifyStr.split(":");
+        String ip = brokerInfoArr[0];
+        Integer port = Integer.parseInt(brokerInfoArr[1]);
+        ServiceInstance existServiceInstance = GlobalConfig.getServiceInstanceManager().get(ip, port);
         long currentTimestamp = System.currentTimeMillis();
-        ServiceInstance serviceInstance = new ServiceInstance();
-        serviceInstance.setIp(brokerInfoArr[0]);
-        serviceInstance.setPort(Integer.valueOf(brokerInfoArr[1]));
-        serviceInstance.setLastHeartBeatTime(currentTimestamp);
-        GlobalConfig.getServiceInstanceManager().putIfExist(serviceInstance);
-        logger.info("[EVENT][HEART-BEAT]:{}", JSON.toJSONString(event));
+        existServiceInstance.setLastHeartBeatTime(currentTimestamp);
         HeartBeatDTO heartBeatDTO = new HeartBeatDTO();
         heartBeatDTO.setMsgId(event.getMsgId());
         TcpMessage tcpMessage = new TcpMessage(NameServerResponseCode.HEART_BEAT_SUCCESS.getCode(), JSON.toJSONBytes(heartBeatDTO));

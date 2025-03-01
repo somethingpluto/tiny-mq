@@ -21,4 +21,12 @@ public class UnRegistryDTO implements Serializable {
     public void setBrokerPort(Integer brokerPort) {
         this.brokerPort = brokerPort;
     }
+
+    @Override
+    public String toString() {
+        return "UnRegistryDTO{" +
+                "brokerIP='" + brokerIP + '\'' +
+                ", brokerPort=" + brokerPort +
+                '}';
+    }
 }

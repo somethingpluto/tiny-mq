@@ -12,4 +12,11 @@ public class ConsumeMsgBaseRespDTO extends BaseBrokerRemoteDTO {
     public void setConsumeMsgRespDTOList(List<ConsumeMsgRespDTO> consumeMsgRespDTOList) {
         this.consumeMsgRespDTOList = consumeMsgRespDTOList;
     }
+
+    @Override
+    public String toString() {
+        return "ConsumeMsgBaseRespDTO{" +
+                "consumeMsgRespDTOList=" + consumeMsgRespDTOList +
+                "} " + super.toString();
+    }
 }

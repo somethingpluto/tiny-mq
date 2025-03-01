@@ -1,5 +1,7 @@
 package org.tiny.mq.common.dto;
 
+import java.util.Arrays;
+
 public class MessageDTO {
     private String topic;
     private int queueId = -1;
@@ -45,5 +47,16 @@ public class MessageDTO {
 
     public void setBody(byte[] body) {
         this.body = body;
+    }
+
+    @Override
+    public String toString() {
+        return "MessageDTO{" +
+                "topic='" + topic + '\'' +
+                ", queueId=" + queueId +
+                ", msgId='" + msgId + '\'' +
+                ", sendWay=" + sendWay +
+                ", body=" + Arrays.toString(body) +
+                '}';
     }
 }

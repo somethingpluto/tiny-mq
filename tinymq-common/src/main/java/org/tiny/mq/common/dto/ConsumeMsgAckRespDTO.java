@@ -10,4 +10,11 @@ public class ConsumeMsgAckRespDTO extends BaseBrokerRemoteDTO {
     public void setAckStatus(int ackStatus) {
         this.ackStatus = ackStatus;
     }
+
+    @Override
+    public String toString() {
+        return "ConsumeMsgAckRespDTO{" +
+                "ackStatus=" + ackStatus +
+                "} " + super.toString();
+    }
 }

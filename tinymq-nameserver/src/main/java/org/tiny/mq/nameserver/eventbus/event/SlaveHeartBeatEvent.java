@@ -31,6 +31,6 @@ public class SlaveHeartBeatEvent extends Event {
         return "SlaveHeartBeatEvent{" +
                 "ip='" + ip + '\'' +
                 ", port=" + port +
-                '}';
+                "} " + super.toString();
     }
 }

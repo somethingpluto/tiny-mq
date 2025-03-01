@@ -21,4 +21,12 @@ public class ConsumeMsgRespDTO {
     public void setCommitLogContentList(List<byte[]> commitLogContentList) {
         this.commitLogContentList = commitLogContentList;
     }
+
+    @Override
+    public String toString() {
+        return "ConsumeMsgRespDTO{" +
+                "queueId=" + queueId +
+                ", commitLogContentList=" + commitLogContentList +
+                '}';
+    }
 }

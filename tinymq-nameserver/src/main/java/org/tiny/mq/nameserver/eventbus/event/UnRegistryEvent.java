@@ -21,4 +21,12 @@ public class UnRegistryEvent extends Event {
     public void setPort(Integer port) {
         this.port = port;
     }
+
+    @Override
+    public String toString() {
+        return "UnRegistryEvent{" +
+                "ip='" + ip + '\'' +
+                ", port=" + port +
+                "} " + super.toString();
+    }
 }

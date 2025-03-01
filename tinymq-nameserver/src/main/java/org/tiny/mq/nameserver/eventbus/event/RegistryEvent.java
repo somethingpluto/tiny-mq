@@ -65,4 +65,17 @@ public class RegistryEvent extends Event {
     public String getIPAddr() {
         return ip + ":" + port;
     }
+
+
+    @Override
+    public String toString() {
+        return "RegistryEvent{" +
+                "registryType='" + registryType + '\'' +
+                ", user='" + user + '\'' +
+                ", password='" + password + '\'' +
+                ", ip='" + ip + '\'' +
+                ", port=" + port +
+                ", attrs=" + attrs +
+                "} " + super.toString();
+    }
 }

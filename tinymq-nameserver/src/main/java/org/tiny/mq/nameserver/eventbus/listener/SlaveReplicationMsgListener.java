@@ -20,9 +20,9 @@ public class SlaveReplicationMsgListener implements Listener<ReplicationMsgEvent
 
     @Override
     public void onReceive(ReplicationMsgEvent event) {
+        logger.info("[EVENT][Slave Replication Msg]:{}", event);
         // 1.接收传递过来的数据
         ServiceInstance serviceInstance = event.getServiceInstance();
-        logger.info("slave node {}:{} replication heart beat", serviceInstance.getIp(), serviceInstance.getPort());
         GlobalConfig.getServiceInstanceManager().put(serviceInstance);
         // 2.发送ACK信息
         SlaveReplicationMsgAckEvent slaveReplicationMsgAckEvent = new SlaveReplicationMsgAckEvent();

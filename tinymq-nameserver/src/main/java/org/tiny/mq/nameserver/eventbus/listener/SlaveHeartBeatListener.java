@@ -10,6 +10,6 @@ public class SlaveHeartBeatListener implements Listener<SlaveHeartBeatEvent> {
 
     @Override
     public void onReceive(SlaveHeartBeatEvent event) {
-        logger.info("accept heat beat from {}", event.getIPAddr());
+        logger.info("[EVENT][Slave Heart Beat]:{}", event);
     }
 }

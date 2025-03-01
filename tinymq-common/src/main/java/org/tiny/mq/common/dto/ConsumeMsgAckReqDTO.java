@@ -55,4 +55,16 @@ public class ConsumeMsgAckReqDTO extends BaseBrokerRemoteDTO {
     public void setPort(Integer port) {
         this.port = port;
     }
+
+    @Override
+    public String toString() {
+        return "ConsumeMsgAckReqDTO{" +
+                "topic='" + topic + '\'' +
+                ", consumerGroup='" + consumerGroup + '\'' +
+                ", queueId=" + queueId +
+                ", ackCount=" + ackCount +
+                ", ip='" + ip + '\'' +
+                ", port=" + port +
+                "} " + super.toString();
+    }
 }
