@@ -3,13 +3,13 @@
 		"user_topic":{
 			"consumeGroup":{
 				"user_info_consumer":{
-					"0":"00000000#59748"
+					"0":"00000000#0"
 				},
 				"user_service_group":{
 					"0":"00000000#0"
 				},
 				"order_service_group":{
-					"0":"00000000#59748"
+					"0":"00000000#0"
 				},
 				"order_info_group":{
 					"0":"00000000#0"

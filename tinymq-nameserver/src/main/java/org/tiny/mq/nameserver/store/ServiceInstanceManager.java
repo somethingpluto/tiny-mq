@@ -9,9 +9,11 @@ public class ServiceInstanceManager {
     public void putIfExist(ServiceInstance serviceInstance) {
         ServiceInstance currentInstance = this.get(serviceInstance.getIp(), serviceInstance.getPort());
         if (currentInstance != null && currentInstance.getFirstRegistryTime() != null) {
-            serviceInstance.setFirstRegistryTime(currentInstance.getFirstRegistryTime());
+            currentInstance.setLastHeartBeatTime(serviceInstance.getLastHeartBeatTime());
+            serviceInstanceMap.put(serviceInstance.getIp() + ":" + serviceInstance.getPort(), currentInstance);
+        } else {
+            throw new RuntimeException("之前心跳缓存已经剔除，请重新注册");
         }
-        serviceInstanceMap.put(serviceInstance.getIp() + ":" + serviceInstance.getPort(), serviceInstance);
     }
 
     public void put(ServiceInstance serviceInstance) {

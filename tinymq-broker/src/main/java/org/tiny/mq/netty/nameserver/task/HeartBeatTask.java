@@ -29,8 +29,9 @@ public class HeartBeatTask implements Runnable {
                 byte[] body = JSON.toJSONBytes(heartBeatDTO);
                 TcpMessage message = new TcpMessage(NameServerEventCode.HEART_BEAT.getCode(), body);
                 channel.writeAndFlush(message);
-                logger.info("broker heart beat");
+                logger.info("broker heart beat channel is active:{}", channel.isActive());
             } catch (InterruptedException e) {
+                logger.info("broker heart beat error");
                 throw new RuntimeException(e);
             }
         }

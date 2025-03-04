@@ -62,7 +62,6 @@ public class TcpNettyServerHandler extends SimpleChannelInboundHandler {
             handleUnknownEvent(channelHandlerContext);
             return;
         }
-        logger.info("Accept Event:{}", JSON.toJSONString(event));
         event.setChannelHandlerContext(channelHandlerContext);
         eventBus.publish(event);
     }
@@ -97,36 +96,18 @@ public class TcpNettyServerHandler extends SimpleChannelInboundHandler {
     private HeartBeatEvent handleHeartBeatEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {
         HeartBeatDTO heartBeatDTO = JSON.parseObject(body, HeartBeatDTO.class);
         HeartBeatEvent heartBeatEvent = new HeartBeatEvent();
-        System.out.println("handle heart beat event:" + heartBeatDTO.getMsgId());
         heartBeatEvent.setMsgId(heartBeatDTO.getMsgId());
         return heartBeatEvent;
     }
 
     private UnRegistryEvent handleUnRegistryEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {
-        UnRegistryEvent event = JSON.parseObject(body, UnRegistryEvent.class);
-        return event;
+        return JSON.parseObject(body, UnRegistryEvent.class);
     }
 
     private void handleUnknownEvent(ChannelHandlerContext channelHandlerContext) {
         TcpMessage unknownMessage = new TcpMessage(NameServerResponseCode.UNKNOWN_EVENT.getCode(), NameServerResponseCode.UNKNOWN_EVENT.getDesc().getBytes());
         channelHandlerContext.writeAndFlush(unknownMessage);
         channelHandlerContext.close();
-    }
-
-    /**
-     * tcp disconnect action
-     *
-     * @param ctx
-     * @throws Exception
-     */
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        UnRegistryEvent unRegistryEvent = new UnRegistryEvent();
-        InetSocketAddress socketAddress = (InetSocketAddress) ctx.channel().remoteAddress();
-        unRegistryEvent.setIp(socketAddress.getHostString());
-        unRegistryEvent.setPort(socketAddress.getPort());
-        unRegistryEvent.setChannelHandlerContext(ctx);
-        eventBus.publish(unRegistryEvent);
     }
 
     @Override

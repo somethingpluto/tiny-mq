@@ -10,7 +10,6 @@ import org.tiny.mq.common.dto.HeartBeatDTO;
 import org.tiny.mq.common.dto.ServiceRegistryRespDTO;
 import org.tiny.mq.common.enums.NameServerResponseCode;
 import org.tiny.mq.common.eventbus.Listener;
-import org.tiny.mq.nameserver.config.GlobalConfig;
 import org.tiny.mq.nameserver.eventbus.event.HeartBeatEvent;
 import org.tiny.mq.nameserver.store.ServiceInstance;
 
@@ -20,7 +19,7 @@ public class HeartBeatListener implements Listener<HeartBeatEvent> {
 
     @Override
     public void onReceive(HeartBeatEvent event) throws IllegalAccessException {
-        logger.info("[EVENT][Heart Beart]:{}", event);
+        logger.info("[EVENT][Heart Beat]");
         ChannelHandlerContext channelHandlerContext = event.getChannelHandlerContext();
         Object reqId = channelHandlerContext.attr(AttributeKey.valueOf("reqId")).get();
         if (reqId == null) {
@@ -36,9 +35,11 @@ public class HeartBeatListener implements Listener<HeartBeatEvent> {
         String[] brokerInfoArr = brokerIdentifyStr.split(":");
         String ip = brokerInfoArr[0];
         Integer port = Integer.parseInt(brokerInfoArr[1]);
-        ServiceInstance existServiceInstance = GlobalConfig.getServiceInstanceManager().get(ip, port);
+        ServiceInstance serviceInstance = new ServiceInstance();
+        serviceInstance.setIp(ip);
+        serviceInstance.setPort(port);
         long currentTimestamp = System.currentTimeMillis();
-        existServiceInstance.setLastHeartBeatTime(currentTimestamp);
+        serviceInstance.setLastHeartBeatTime(currentTimestamp);
         HeartBeatDTO heartBeatDTO = new HeartBeatDTO();
         heartBeatDTO.setMsgId(event.getMsgId());
         TcpMessage tcpMessage = new TcpMessage(NameServerResponseCode.HEART_BEAT_SUCCESS.getCode(), JSON.toJSONBytes(heartBeatDTO));

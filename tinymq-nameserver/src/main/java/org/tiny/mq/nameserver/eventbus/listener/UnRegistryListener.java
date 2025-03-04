@@ -18,7 +18,7 @@ public class UnRegistryListener implements Listener<UnRegistryEvent> {
 
     @Override
     public void onReceive(UnRegistryEvent event) throws IllegalAccessException {
-        logger.info("[EVENT][Un Registry]:{}", event);
+        logger.info("[EVENT][Un Registry] ipaddress:{}:{}", event.getIp(), event.getPort());
         ChannelHandlerContext channelHandlerContext = event.getChannelHandlerContext();
         Object reqId = channelHandlerContext.attr(AttributeKey.valueOf("reqId")).get();
         String reqIdentify = (String) reqId;

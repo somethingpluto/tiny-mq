@@ -6,7 +6,6 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tiny.mq.common.codec.TcpMessage;
-import org.tiny.mq.common.enums.NameServerEventCode;
 import org.tiny.mq.common.enums.NameServerResponseCode;
 import org.tiny.mq.config.GlobalCache;
 import org.tiny.mq.netty.nameserver.manager.HeartBeatManager;
@@ -22,21 +21,19 @@ public class NameServerRespChannelHandler extends SimpleChannelInboundHandler {
         TcpMessage message = (TcpMessage) o;
         int code = message.getCode();
         if (code == NameServerResponseCode.REGISTRY_SUCCESS.getCode()) {
-            logger.info("register success start heartbeat");
+            logger.info("register success");
             HeartBeatManager heartBeatManager = GlobalCache.getHeartBeatManager();
             heartBeatManager.startTask();
         } else if (code == NameServerResponseCode.ERROR_USER_OR_PASSWORD.getCode()) {
             // 登录失败
             throw new RuntimeException("error nameserver user or password");
         } else if (code == NameServerResponseCode.HEART_BEAT_SUCCESS.getCode()) {
-            logger.info("broker nameserve heartbeat success");
+            logger.info("accept heart beat ack");
         }
     }
 
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        TcpMessage message = new TcpMessage(NameServerEventCode.UN_REGISTRY.getCode(), NameServerEventCode.UN_REGISTRY.getDesc().getBytes());
-        ctx.writeAndFlush(message);
-        logger.info("un registry event");
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        logger.error(cause.toString());
     }
 }

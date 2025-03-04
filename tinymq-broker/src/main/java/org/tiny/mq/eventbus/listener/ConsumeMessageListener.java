@@ -13,6 +13,7 @@ public class ConsumeMessageListener implements Listener<ConsumeMessageEvent> {
     public void onReceive(ConsumeMessageEvent event) throws IllegalAccessException {
         logger.info("[EVENT][Consume Message]:{}", event);
         ConsumeMsgReqDTO consumeMsgReqDTO = event.getConsumeMsgReqDTO();
-
+        String currentReqId = consumeMsgReqDTO.getIp() + ":" + consumeMsgReqDTO.getPort();
+        String topic = consumeMsgReqDTO.getTopic();
     }
 }

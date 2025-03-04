@@ -28,7 +28,7 @@ public class PushMessageListener implements Listener<PushMessageEvent> {
         }
         SendMessageToBrokerRespDTO sendMessageToBrokerRespDTO = new SendMessageToBrokerRespDTO();
         sendMessageToBrokerRespDTO.setStatus(SendMessageToBrokerRespStatusEnum.SUCCESS.getCode());
-        sendMessageToBrokerRespDTO.setMsgId(event.getMsgId());
+        sendMessageToBrokerRespDTO.setMsgId(messageDTO.getMsgId());
         TcpMessage tcpMessage = new TcpMessage(BrokerResponseCode.SEND_MSG_RESP.getCode(), JSON.toJSONBytes(sendMessageToBrokerRespDTO));
         event.getChannelHandlerContext().writeAndFlush(tcpMessage);
     }

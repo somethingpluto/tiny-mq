@@ -26,6 +26,7 @@ import java.nio.channels.FileChannel;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -93,40 +94,38 @@ public class CommitLogMMapFileModel {
      * @param messageModel 消息对象
      * @param force        是否强制刷盘
      */
-    public void writeContent(MessageModel messageModel, boolean force) {
-        TopicModel topicModel = GlobalCache.getMQTopicModelMap().get(topicName);
-        if (topicModel == null) {
-            throw new IllegalArgumentException("topic:" + topicName + "model is null");
-        }
-        CommitLogModel commitLogModel = topicModel.getCommitLogModel();
-        if (commitLogModel == null) {
-            throw new IllegalArgumentException("commitLogModel is null");
-        }
-        try {
-            appendMessageLock.lock();
-            // 1.查看commit log文件是否还有空余空间
-            this.checkCommitLogHasEnablePlace(messageModel);
-            // 2.获取消息的字节数组表述
-            byte[] bytesContent = messageModel.convertToBytes();
-            // 3.消息写入commit log
-            mappedByteBuffer.put(bytesContent);
-            // 4.消息派发到队列
-            this.dispatch(topicModel, bytesContent);
-            // 5.消息指针后移
-            commitLogModel.getOffset().addAndGet(bytesContent.length);
-            if (force) {
-                mappedByteBuffer.force();
-            }
-//            logger.info("{} append message:{}", topicName, messageModel);
-
-        } catch (Exception e) {
-            logger.error("write message error {}", e.toString());
-        } finally {
-            appendMessageLock.unlock();
-        }
-    }
-
-
+//    public void writeContent(MessageModel messageModel, boolean force) {
+//        TopicModel topicModel = GlobalCache.getMQTopicModelMap().get(topicName);
+//        if (topicModel == null) {
+//            throw new IllegalArgumentException("topic:" + topicName + "model is null");
+//        }
+//        CommitLogModel commitLogModel = topicModel.getCommitLogModel();
+//        if (commitLogModel == null) {
+//            throw new IllegalArgumentException("commitLogModel is null");
+//        }
+//        try {
+//            appendMessageLock.lock();
+//            // 1.查看commit log文件是否还有空余空间
+//            this.checkCommitLogHasEnablePlace(messageModel);
+//            // 2.获取消息的字节数组表述
+//            byte[] bytesContent = messageModel.convertToBytes();
+//            // 3.消息写入commit log
+//            mappedByteBuffer.put(bytesContent);
+//            // 4.消息派发到队列
+//            this.dispatch(topicModel, bytesContent);
+//            // 5.消息指针后移
+//            commitLogModel.getOffset().addAndGet(bytesContent.length);
+//            if (force) {
+//                mappedByteBuffer.force();
+//            }
+////            logger.info("{} append message:{}", topicName, messageModel);
+//
+//        } catch (Exception e) {
+//            logger.error("write message error {}", e.toString());
+//        } finally {
+//            appendMessageLock.unlock();
+//        }
+//    }
     public void writeContent(MessageDTO messageDTO, boolean force) {
         TopicModel topicModel = GlobalCache.getMQTopicModelMap().get(messageDTO.getTopic());
         if (topicModel == null) {
@@ -147,7 +146,7 @@ public class CommitLogMMapFileModel {
             // 3.消息写入commit log
             mappedByteBuffer.put(bytesContent);
             // 4.消息派发到队列
-            this.dispatch(topicModel, bytesContent);
+            this.dispatch(messageDTO);
             // 5.消息指针后移
             commitLogModel.getOffset().addAndGet(bytesContent.length);
             if (force) {
@@ -163,27 +162,30 @@ public class CommitLogMMapFileModel {
     }
 
 
-    /**
-     * 新增消息 同步到队列(做索引)
-     *
-     * @param topicModel   主题模型
-     * @param bytesContent 字节内容
-     */
-    private void dispatch(TopicModel topicModel, byte[] bytesContent) {
-        String fileName = topicModel.getCommitLogModel().getFileName();
-        int offset = topicModel.getCommitLogModel().getOffset().get();
-        // TODO: 获取待写入队列的id
+    private void dispatch(MessageDTO messageDTO) {
+        TopicModel topicModel = GlobalCache.getMQTopicModelMap().get(topicName);
+        if (topicModel == null) {
+            throw new RuntimeException("topic is undefined");
+        }
         int queueId = 0;
+        if (messageDTO.getQueueId() >= 0) {
+            queueId = messageDTO.getQueueId();
+        } else {
+            //TODO:定义如何分发消息到队列
+            int queueSize = topicModel.getQueueList().size();
+            queueId = new Random().nextInt(queueSize);
+        }
         // 包装本次写入数据在文件中的索引信息
         ConsumeQueueItemModel consumeQueueItemModel = new ConsumeQueueItemModel();
-        consumeQueueItemModel.setMsgLength(bytesContent.length);
-        consumeQueueItemModel.setCommitLogFilename(Integer.parseInt(fileName));
-        consumeQueueItemModel.setMsgIndex(offset);
+        consumeQueueItemModel.setMsgLength(messageDTO.getBody().length);
+        consumeQueueItemModel.setCommitLogFilename(Integer.parseInt(topicModel.getCommitLogModel().getFileName()));
+        consumeQueueItemModel.setMsgIndex(topicModel.getCommitLogModel().getOffset().get());
         logger.info("consume queue item {}", consumeQueueItemModel);
         byte[] content = consumeQueueItemModel.convertToBytes();
         // 获取对应的队列索引文件，并将内容写入到对应的索引文件
         List<ConsumeQueueMemoryMapFileModel> consumeQueueMemoryMapFileModels = GlobalCache.getConsumeQueueMMapFileModelManager().get(topicName);
-        ConsumeQueueMemoryMapFileModel consumeQueueMMpFileModel = consumeQueueMemoryMapFileModels.stream().filter(consumeQueueMemoryMapFileModel -> consumeQueueMemoryMapFileModel.getQueueId().equals(queueId)).findFirst().orElse(null);
+        int finalQueueId = queueId;
+        ConsumeQueueMemoryMapFileModel consumeQueueMMpFileModel = consumeQueueMemoryMapFileModels.stream().filter(consumeQueueMemoryMapFileModel -> consumeQueueMemoryMapFileModel.getQueueId().equals(finalQueueId)).findFirst().orElse(null);
         consumeQueueMMpFileModel.writeContent(content);
         // 写入时更新 刷新offset
         QueueModel queueModel = topicModel.getQueueList().get(queueId);
@@ -191,9 +193,9 @@ public class CommitLogMMapFileModel {
 
     }
 
-    public void writeContent(MessageModel messageModel) {
-        this.writeContent(messageModel, false);
-    }
+//    public void writeContent(MessageModel messageModel) {
+//        this.writeContent(messageModel, false);
+//    }
 
 
     /**

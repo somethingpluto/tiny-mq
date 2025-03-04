@@ -27,7 +27,7 @@ public class RegistryListener implements Listener<RegistryEvent> {
 
     @Override
     public void onReceive(RegistryEvent event) throws IllegalAccessException {
-        logger.info("[EVENT][Registry]:{}", event);
+        logger.info("[EVENT][Registry] type:{}, address:{}:{}", event.getRegistryType(), event.getIp(), event.getPort());
         String user = event.getUser();
         String password = event.getPassword();
         ChannelHandlerContext channelHandlerContext = event.getChannelHandlerContext();

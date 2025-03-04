@@ -2,6 +2,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.tiny.mq.common.dto.MessageDTO;
 import org.tiny.mq.producer.DefaultProducer;
+import org.tiny.mq.producer.SendResult;
 
 public class ProducerTest {
     private DefaultProducer producer = new DefaultProducer();
@@ -17,11 +18,18 @@ public class ProducerTest {
 
     @Test
     public void testSendMessage() {
-        MessageDTO messageDTO = new MessageDTO();
-        messageDTO.setBody("send sync message".getBytes());
-        messageDTO.setTopic("user_topic");
-        producer.sendMessage(messageDTO);
-        messageDTO.setBody("send async message".getBytes());
-        producer.sendAsyncMessage(messageDTO);
+        for (int i = 0; i < 1000000000; i++) {
+            try {
+                MessageDTO messageDTO = new MessageDTO();
+                messageDTO.setBody("send sync message".getBytes());
+                messageDTO.setTopic("user_topic");
+                SendResult sendResult = producer.sendMessage(messageDTO);
+                System.out.println("send message:" + sendResult.getSendStatus());
+            } catch (Exception e) {
+                System.out.println(e);
+            }
+
+        }
+
     }
 }

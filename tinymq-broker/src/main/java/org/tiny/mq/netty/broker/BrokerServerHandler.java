@@ -34,7 +34,6 @@ public class BrokerServerHandler extends SimpleChannelInboundHandler {
         byte[] body = tcpMessage.getBody();
         Event event = null;
         if (code == BrokerEventCode.PUSH_MSG.getCode()) {
-            logger.info("accept message from client {}", body);
             event = handlePushMessageEvent(body, channelHandlerContext);
         } else if (code == BrokerEventCode.CONSUME_MSG.getCode()) {
             event = handleConsumeMessageEvent(body, channelHandlerContext);
