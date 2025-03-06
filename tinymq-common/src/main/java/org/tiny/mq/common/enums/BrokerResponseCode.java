@@ -1,8 +1,12 @@
 package org.tiny.mq.common.enums;
 
-public enum BrokerResponseCode {
-    SEND_MSG_RESP(20001, "push message to broker"), CONSUME_MSG_RESP(20002, "consume broker message return data"), BROKER_UPDATE_CONSUME_OFFSET_RESP(20003, "broker update offset");
 
+public enum BrokerResponseCode {
+
+    SEND_MSG_RESP(2001, "推送消息给broker，响应code"),
+    CONSUME_MSG_RESP(2002, "消费broker消息返回数据，响应code"),
+    BROKER_UPDATE_CONSUME_OFFSET_RESP(2003, "broker更新消费offset，响应code"),
+    ;
 
     int code;
     String desc;
@@ -16,15 +20,7 @@ public enum BrokerResponseCode {
         return code;
     }
 
-    public void setCode(int code) {
-        this.code = code;
-    }
-
     public String getDesc() {
         return desc;
-    }
-
-    public void setDesc(String desc) {
-        this.desc = desc;
     }
 }

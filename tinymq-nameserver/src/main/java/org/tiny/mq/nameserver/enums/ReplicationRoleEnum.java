@@ -2,30 +2,30 @@ package org.tiny.mq.nameserver.enums;
 
 public enum ReplicationRoleEnum {
 
-    MASTER("master", "master_slave-master"),
-    SLAVE("slave", "master_slave-slave"),
-    NODE("not_tail_node", "chain_not_tail_node"),
-    TAIL_NODE("tail_node", "chain_tail_node");
+    MASTER("master", "主从-主"),
+    SLAVE("slave", "主从-从"),
+    NODE("not_tail_node", "链路复制-非尾部节点"),
+    TAIL_NODE("tail_node", "链路复制-尾部节点"),
+    ;
+    String code;
+    String desc;
 
-    private final String role;
-    private final String desc;
-
-    ReplicationRoleEnum(String role, String desc) {
-        this.role = role;
+    ReplicationRoleEnum(String code, String desc) {
+        this.code = code;
         this.desc = desc;
     }
 
-    public static ReplicationRoleEnum of(String role) {
+    public static ReplicationRoleEnum of(String code) {
         for (ReplicationRoleEnum value : values()) {
-            if (value.getRole().equals(role)) {
+            if (value.getCode().equals(code)) {
                 return value;
             }
         }
         return null;
     }
 
-    public String getRole() {
-        return role;
+    public String getCode() {
+        return code;
     }
 
     public String getDesc() {

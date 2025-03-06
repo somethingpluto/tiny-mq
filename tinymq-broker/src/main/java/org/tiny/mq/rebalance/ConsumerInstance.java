@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class ConsumerInstance {
+
     private String ip;
     private Integer port;
     private String consumeGroup;
@@ -11,6 +12,23 @@ public class ConsumerInstance {
     private Integer batchSize;
     private Set<Integer> queueIdSet = new HashSet<>();
     private String consumerReqId;
+
+
+    public Integer getBatchSize() {
+        return batchSize;
+    }
+
+    public void setBatchSize(Integer batchSize) {
+        this.batchSize = batchSize;
+    }
+
+    public String getConsumerReqId() {
+        return consumerReqId;
+    }
+
+    public void setConsumerReqId(String consumerReqId) {
+        this.consumerReqId = consumerReqId;
+    }
 
     public String getIp() {
         return ip;
@@ -44,27 +62,11 @@ public class ConsumerInstance {
         this.topic = topic;
     }
 
-    public Integer getBatchSize() {
-        return batchSize;
-    }
-
-    public void setBatchSize(Integer batchSize) {
-        this.batchSize = batchSize;
-    }
-
     public Set<Integer> getQueueIdSet() {
         return queueIdSet;
     }
 
     public void setQueueIdSet(Set<Integer> queueIdSet) {
         this.queueIdSet = queueIdSet;
-    }
-
-    public String getConsumerReqId() {
-        return consumerReqId;
-    }
-
-    public void setConsumerReqId(String consumerReqId) {
-        this.consumerReqId = consumerReqId;
     }
 }

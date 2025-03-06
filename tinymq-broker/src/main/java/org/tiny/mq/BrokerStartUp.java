@@ -1,70 +1,77 @@
 package org.tiny.mq;
 
-import io.netty.util.internal.StringUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.tiny.mq.config.*;
-import org.tiny.mq.core.commitlog.CommitLogAppenderHandler;
-import org.tiny.mq.core.consumequeue.ConsumeQueueAppendHandler;
-import org.tiny.mq.core.consumequeue.ConsumeQueueConsumeHandler;
-import org.tiny.mq.hook.ShutDoneHook;
-import org.tiny.mq.model.commitlog.TopicModel;
+
+import org.tiny.mq.cache.CommonCache;
+import org.tiny.mq.config.ConsumeQueueOffsetLoader;
+import org.tiny.mq.config.EagleMqTopicLoader;
+import org.tiny.mq.config.GlobalPropertiesLoader;
+import org.tiny.mq.core.CommitLogAppendHandler;
+import org.tiny.mq.core.ConsumeQueueAppendHandler;
+import org.tiny.mq.core.ConsumeQueueConsumeHandler;
+import org.tiny.mq.model.EagleMqTopicModel;
 import org.tiny.mq.netty.broker.BrokerServer;
-import org.tiny.mq.netty.nameserver.NameServerClient;
 
 import java.io.IOException;
-import java.util.List;
+
 
 public class BrokerStartUp {
 
-    private static final Logger logger = LoggerFactory.getLogger(BrokerStartUp.class);
-    private static final CommitLogAppenderHandler commitLogAppenderHandler = new CommitLogAppenderHandler();
-    private static final ConfigPropertiesLoader configPropertiesLoader = new ConfigPropertiesLoader();
-    private static final CommitLogPropertiesLoader commitLogPropertiesLoader = new CommitLogPropertiesLoader();
-    private static final ConsumeQueueOffsetPropertiesLoader consumeQueueOffsetPropertiesLoader = new ConsumeQueueOffsetPropertiesLoader();
-    private static final ConsumeQueueAppendHandler consumeQueueAppendHandler = new ConsumeQueueAppendHandler();
-    private static final ConsumeQueueConsumeHandler consumeQueueConsumeHandler = new ConsumeQueueConsumeHandler();
+    private static GlobalPropertiesLoader globalPropertiesLoader;
+    private static EagleMqTopicLoader eagleMqTopicLoader;
+    private static CommitLogAppendHandler commitLogAppendHandler;
+    private static ConsumeQueueOffsetLoader consumeQueueOffsetLoader;
+    private static ConsumeQueueAppendHandler consumeQueueAppendHandler;
+    private static ConsumeQueueConsumeHandler consumeQueueConsumeHandler;
 
+    /**
+     * 初始化配置逻辑
+     */
+    private static void initProperties() throws IOException {
+        globalPropertiesLoader = new GlobalPropertiesLoader();
+        eagleMqTopicLoader = new EagleMqTopicLoader();
+        consumeQueueOffsetLoader = new ConsumeQueueOffsetLoader();
+        consumeQueueConsumeHandler = new ConsumeQueueConsumeHandler();
+        commitLogAppendHandler = new CommitLogAppendHandler();
+        consumeQueueAppendHandler = new ConsumeQueueAppendHandler();
 
-    public static void initProperties() throws IOException {
-        NameServerConfigLoader.loadProperties();
-        configPropertiesLoader.loadProperties();
-        commitLogPropertiesLoader.loadProperties();
-        consumeQueueOffsetPropertiesLoader.loadProperties();
-
-        commitLogPropertiesLoader.startRefreshMQTopicInfoTask();
-        consumeQueueOffsetPropertiesLoader.startRefreshConsumeQueueOffsetTask();
-        String basePath = GlobalCache.getConfig().getBasePath();
-        if (StringUtil.isNullOrEmpty(basePath)) {
-            throw new IllegalArgumentException("tiny_mq_home_path is invalid");
+        globalPropertiesLoader.loadProperties();
+        eagleMqTopicLoader.loadProperties();
+        eagleMqTopicLoader.startRefreshEagleMqTopicInfoTask();
+        consumeQueueOffsetLoader.loadProperties();
+        consumeQueueOffsetLoader.startRefreshConsumeQueueOffsetTask();
+        for (EagleMqTopicModel eagleMqTopicModel : CommonCache.getEagleMqTopicModelMap().values()) {
+            String topicName = eagleMqTopicModel.getTopic();
+            commitLogAppendHandler.prepareMMapLoading(topicName);
+            consumeQueueAppendHandler.prepareConsumeQueue(topicName);
         }
-
-        List<TopicModel> topicConfigList = GlobalCache.getTopicConfigList();
-        for (TopicModel topicModel : topicConfigList) {
-            commitLogAppenderHandler.prepareMMapLoading(topicModel);
-            consumeQueueAppendHandler.prepareConsumeQueue(topicModel.getTopicName());
-        }
-        GlobalCache.setCommitLogAppenderHandler(commitLogAppenderHandler);
+        CommonCache.setConsumeQueueConsumeHandler(consumeQueueConsumeHandler);
+        CommonCache.setCommitLogAppendHandler(commitLogAppendHandler);
     }
 
-    public static void initNameServerChannel() {
-        NameServerClient client = GlobalCache.getNameServerClient();
-        client.initConnection();
-        client.sendRegistryMessage();
+    /**
+     * 初始化和nameserver的长链接通道
+     */
+    private static void initNameServerChannel() {
+        CommonCache.getNameServerClient().initConnection();
+        CommonCache.getNameServerClient().sendRegistryMsg();
     }
 
-    public static void initBrokerServerChannel() throws InterruptedException {
-        BrokerServer brokerServer = new BrokerServer(GlobalCache.getNameServerConfig().getBrokerPort());
+    //开启重平衡任务
+    private static void initReBalanceJob() {
+        CommonCache.getConsumerInstancePool().startReBalanceJob();
+    }
+
+    private static void initBrokerServer() throws InterruptedException {
+        BrokerServer brokerServer = new BrokerServer(CommonCache.getGlobalProperties().getBrokerPort());
         brokerServer.startServer();
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        Runtime.getRuntime().addShutdownHook(new ShutDoneHook());
         //加载配置 ，缓存对象的生成
         initProperties();
-        // 初始化网络连接
         initNameServerChannel();
-        // 初始化Broker服务
-        initBrokerServerChannel();
+        initReBalanceJob();
+        //这个函数是会阻塞的
+        initBrokerServer();
     }
 }

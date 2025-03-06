@@ -1,6 +1,8 @@
 package org.tiny.mq.common.dto;
 
+
 public class BaseNameServerRemoteDTO {
+
     private String msgId;
 
     public String getMsgId() {
@@ -9,12 +11,5 @@ public class BaseNameServerRemoteDTO {
 
     public void setMsgId(String msgId) {
         this.msgId = msgId;
-    }
-
-    @Override
-    public String toString() {
-        return "BaseNameServerRemoteDTO{" +
-                "msgId='" + msgId + '\'' +
-                '}';
     }
 }

@@ -2,9 +2,9 @@ package org.tiny.mq.common.dto;
 
 import io.netty.channel.ChannelHandlerContext;
 
-import java.io.Serializable;
 
-public class NodeAckDTO implements Serializable {
+public class NodeAckDTO {
+
     private ChannelHandlerContext channelHandlerContext;
 
     public ChannelHandlerContext getChannelHandlerContext() {
@@ -13,12 +13,5 @@ public class NodeAckDTO implements Serializable {
 
     public void setChannelHandlerContext(ChannelHandlerContext channelHandlerContext) {
         this.channelHandlerContext = channelHandlerContext;
-    }
-
-    @Override
-    public String toString() {
-        return "NodeAckDTO{" +
-                "channelHandlerContext=" + channelHandlerContext +
-                '}';
     }
 }

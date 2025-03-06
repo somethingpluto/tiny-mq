@@ -1,47 +1,64 @@
 package org.tiny.mq.nameserver.core;
 
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tiny.mq.common.codec.TcpMessageDecoder;
-import org.tiny.mq.common.codec.TcpMessageEncoder;
-import org.tiny.mq.common.eventbus.EventBus;
+import org.tiny.mq.common.coder.TcpMsgDecoder;
+import org.tiny.mq.common.coder.TcpMsgEncoder;
+import org.tiny.mq.common.constants.TcpConstants;
+import org.tiny.mq.common.event.EventBus;
 import org.tiny.mq.nameserver.handler.TcpNettyServerHandler;
 
+
 public class NameServerStarter {
+
     private final Logger logger = LoggerFactory.getLogger(NameServerStarter.class);
-    private final int port;
+
+    private int port;
 
     public NameServerStarter(int port) {
         this.port = port;
     }
 
     public void startServer() throws InterruptedException {
+        //构建netty服务
+        //注入编解码器
+        //注入特定的handler
+        //启动netty服务
+
+        //处理网络io中的accept事件
         NioEventLoopGroup bossGroup = new NioEventLoopGroup();
+        //处理网络io中的read&write事件
         NioEventLoopGroup workerGroup = new NioEventLoopGroup();
-        ServerBootstrap serverBootstrap = new ServerBootstrap();
-        serverBootstrap.group(bossGroup, workerGroup);
-        serverBootstrap.channel(NioServerSocketChannel.class);
-        serverBootstrap.childHandler(new ChannelInitializer<Channel>() {
+        ServerBootstrap bootstrap = new ServerBootstrap();
+        bootstrap.group(bossGroup, workerGroup);
+        bootstrap.channel(NioServerSocketChannel.class);
+        bootstrap.childHandler(new ChannelInitializer<Channel>() {
             @Override
-            protected void initChannel(Channel channel) throws Exception {
-                channel.pipeline().addLast(new TcpMessageDecoder());
-                channel.pipeline().addLast(new TcpMessageEncoder());
-                channel.pipeline().addLast(new TcpNettyServerHandler(new EventBus("broker-connection-")));
+            protected void initChannel(Channel ch) throws Exception {
+                ByteBuf delimiter = Unpooled.copiedBuffer(TcpConstants.DEFAULT_DECODE_CHAR.getBytes());
+                ch.pipeline().addLast(new DelimiterBasedFrameDecoder(1024 * 8, delimiter));
+                ch.pipeline().addLast(new TcpMsgDecoder());
+                ch.pipeline().addLast(new TcpMsgEncoder());
+                ch.pipeline().addLast(new TcpNettyServerHandler(new EventBus("broker-connection-")));
             }
         });
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
-            logger.info("nameserver closed");
+            logger.info("nameserver is closed");
         }));
-        ChannelFuture channelFuture = serverBootstrap.bind(port).sync();
-        logger.info("start nameserver application on port:{}", port);
+        ChannelFuture channelFuture = bootstrap.bind(port).sync();
+        logger.info("start nameserver application on port:" + port);
+        //阻塞代码
         channelFuture.channel().closeFuture().sync();
     }
 }

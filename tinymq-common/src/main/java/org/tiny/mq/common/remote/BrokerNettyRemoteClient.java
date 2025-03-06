@@ -1,37 +1,48 @@
 package org.tiny.mq.common.remote;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelInitializer;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import org.tiny.mq.common.cache.BrokerServerSyncFutureManager;
-import org.tiny.mq.common.codec.TcpMessage;
-import org.tiny.mq.common.codec.TcpMessageDecoder;
-import org.tiny.mq.common.codec.TcpMessageEncoder;
+import org.tiny.mq.common.coder.TcpMsg;
+import org.tiny.mq.common.coder.TcpMsgDecoder;
+import org.tiny.mq.common.coder.TcpMsgEncoder;
+import org.tiny.mq.common.constants.TcpConstants;
+
 
 public class BrokerNettyRemoteClient {
+
     private String ip;
     private Integer port;
-
-    private NioEventLoopGroup clientGroup = new NioEventLoopGroup();
-    private Bootstrap bootstrap = new Bootstrap();
-    private Channel channel = null;
 
     public BrokerNettyRemoteClient(String ip, Integer port) {
         this.ip = ip;
         this.port = port;
     }
 
+    private EventLoopGroup clientGroup = new NioEventLoopGroup();
+    private Bootstrap bootstrap = new Bootstrap();
+    private Channel channel;
+
+    /**
+     * 远程连接的初始化
+     */
     public void buildConnection() {
-        bootstrap.group(clientGroup).channel(NioSocketChannel.class).handler(new ChannelInitializer<NioSocketChannel>() {
+        bootstrap.group(clientGroup);
+        bootstrap.channel(NioSocketChannel.class);
+        bootstrap.handler(new ChannelInitializer<SocketChannel>() {
             @Override
-            protected void initChannel(NioSocketChannel nioSocketChannel) throws Exception {
-                nioSocketChannel.pipeline().addLast(new TcpMessageDecoder());
-                nioSocketChannel.pipeline().addLast(new TcpMessageEncoder());
-                nioSocketChannel.pipeline().addLast(new BrokerNettyRemoteHandler());
+            protected void initChannel(SocketChannel ch) throws Exception {
+                ByteBuf delimiter = Unpooled.copiedBuffer(TcpConstants.DEFAULT_DECODE_CHAR.getBytes());
+                ch.pipeline().addLast(new DelimiterBasedFrameDecoder(1024 * 8, delimiter));
+                ch.pipeline().addLast(new TcpMsgDecoder());
+                ch.pipeline().addLast(new TcpMsgEncoder());
+                ch.pipeline().addLast(new BrokerRemoteRespHandler());
             }
         });
         ChannelFuture channelFuture = null;
@@ -40,28 +51,30 @@ public class BrokerNettyRemoteClient {
                 @Override
                 public void operationComplete(ChannelFuture channelFuture) throws Exception {
                     if (!channelFuture.isSuccess()) {
-                        throw new RuntimeException("connection broker error");
+                        throw new RuntimeException("connecting nameserver has error!");
                     }
                 }
             });
+            //初始化建立长链接
             channel = channelFuture.channel();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public TcpMessage sendSyncMessage(TcpMessage tcpMessage, String msgId) {
-        channel.writeAndFlush(tcpMessage);
-        SyncFuture syncFuture = new SyncFuture(msgId);
+    public TcpMsg sendSyncMsg(TcpMsg tcpMsg, String msgId) {
+        channel.writeAndFlush(tcpMsg);
+        SyncFuture syncFuture = new SyncFuture();
+        syncFuture.setMsgId(msgId);
         BrokerServerSyncFutureManager.put(msgId, syncFuture);
         try {
-            return (TcpMessage) syncFuture.get();
+            return (TcpMsg) syncFuture.get();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    public void sendAsyncMsg(TcpMessage tcpMsg) {
+    public void sendAsyncMsg(TcpMsg tcpMsg) {
         channel.writeAndFlush(tcpMsg);
     }
 }

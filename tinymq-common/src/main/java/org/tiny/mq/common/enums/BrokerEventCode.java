@@ -1,31 +1,26 @@
 package org.tiny.mq.common.enums;
 
+
 public enum BrokerEventCode {
-    PUSH_MSG(100001, "push message"),
-    CONSUME_MSG(100002, "consume message"),
-    CONSUME_SUCCESS_MSG(100003, "consume message success");
+
+    PUSH_MSG(1001, "推送消息"),
+    CONSUME_MSG(1002, "消费消息"),
+    CONSUME_SUCCESS_MSG(1003, "消费成功"),
+    ;
 
     int code;
-    String message;
+    String desc;
 
-    BrokerEventCode(int code, String message) {
+    BrokerEventCode(int code, String desc) {
         this.code = code;
-        this.message = message;
+        this.desc = desc;
     }
 
     public int getCode() {
         return code;
     }
 
-    public void setCode(int code) {
-        this.code = code;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
+    public String getDesc() {
+        return desc;
     }
 }

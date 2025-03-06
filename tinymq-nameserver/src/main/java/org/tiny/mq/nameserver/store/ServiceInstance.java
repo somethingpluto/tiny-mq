@@ -6,26 +6,11 @@ import java.util.Map;
 public class ServiceInstance {
 
     private String registryType;
-    /**
-     * broker IP
-     */
     private String ip;
-    /**
-     * broker port
-     */
     private Integer port;
-    /**
-     * broker 注册事件
-     */
     private Long firstRegistryTime;
-    /**
-     * broker 最后一次心跳通信时间
-     */
     private Long lastHeartBeatTime;
-    /**
-     * broker额外信息
-     */
-    private Map<String, String> attrs = new HashMap<>();
+    private Map<String, Object> attrs = new HashMap<>();
 
     public String getRegistryType() {
         return registryType;
@@ -67,16 +52,11 @@ public class ServiceInstance {
         this.lastHeartBeatTime = lastHeartBeatTime;
     }
 
-    public Map<String, String> getAttrs() {
+    public Map<String, Object> getAttrs() {
         return attrs;
     }
 
-    public void setAttrs(Map<String, String> attrs) {
+    public void setAttrs(Map<String, Object> attrs) {
         this.attrs = attrs;
-    }
-
-    @Override
-    public String toString() {
-        return "ServiceInstance{" + "ip='" + ip + '\'' + ", port=" + port + ", firstRegistryTime=" + firstRegistryTime + ", lastHeartBeatTime=" + lastHeartBeatTime + ", attrs=" + attrs + '}';
     }
 }

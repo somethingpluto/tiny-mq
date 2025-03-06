@@ -4,7 +4,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ServiceInstanceManager {
-    private final Map<String, ServiceInstance> serviceInstanceMap = new ConcurrentHashMap<>();
+
+    private Map<String, ServiceInstance> serviceInstanceMap = new ConcurrentHashMap<>();
 
     public void putIfExist(ServiceInstance serviceInstance) {
         ServiceInstance currentInstance = this.get(serviceInstance.getIp(), serviceInstance.getPort());

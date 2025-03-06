@@ -1,37 +1,36 @@
 package org.tiny.mq.nameserver.handler;
 
+import com.alibaba.fastjson.JSON;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.tiny.mq.common.codec.TcpMessage;
+import org.tiny.mq.common.coder.TcpMsg;
 import org.tiny.mq.common.enums.NameServerEventCode;
-import org.tiny.mq.common.eventbus.Event;
-import org.tiny.mq.common.eventbus.EventBus;
+import org.tiny.mq.common.event.EventBus;
+import org.tiny.mq.common.event.model.Event;
+import org.tiny.mq.nameserver.event.model.NodeReplicationAckMsgEvent;
 
-/**
- * 向下一个节点发送同步数据的处理器
- */
+
 @ChannelHandler.Sharable
 public class NodeSendReplicationMsgServerHandler extends SimpleChannelInboundHandler {
-    private static final Logger logger = LoggerFactory.getLogger(NodeSendReplicationMsgServerHandler.class);
-    private final EventBus eventBus;
+
+    private EventBus eventBus;
 
     public NodeSendReplicationMsgServerHandler(EventBus eventBus) {
         this.eventBus = eventBus;
+        this.eventBus.init();
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object o) throws Exception {
-        TcpMessage message = (TcpMessage) o;
-        int code = message.getCode();
-        byte[] body = message.getBody();
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object msg) throws Exception {
+        TcpMsg tcpMsg = (TcpMsg) msg;
+        int code = tcpMsg.getCode();
+        byte[] body = tcpMsg.getBody();
         Event event = null;
-        if (NameServerEventCode.SLAVE_REPLICATION_ACK_MSG.getCode() == code) {
-
+        if (NameServerEventCode.NODE_REPLICATION_ACK_MSG.getCode() == code) {
+            event = JSON.parseObject(body, NodeReplicationAckMsgEvent.class);
         }
         event.setChannelHandlerContext(channelHandlerContext);
-        // TODO
+        eventBus.publish(event);
     }
 }

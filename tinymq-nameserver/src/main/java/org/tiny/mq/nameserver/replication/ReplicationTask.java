@@ -1,8 +1,13 @@
 package org.tiny.mq.nameserver.replication;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public abstract class ReplicationTask {
 
-    private final String taskName;
+    private final Logger logger = LoggerFactory.getLogger(ReplicationTask.class);
+
+    private String taskName;
 
     public ReplicationTask(String taskName) {
         this.taskName = taskName;
@@ -10,7 +15,7 @@ public abstract class ReplicationTask {
 
     public void startTaskAsync() {
         Thread task = new Thread(() -> {
-            System.out.println("start job:" + taskName);
+            logger.info("start job:" + taskName);
             startTask();
         });
         task.setName(taskName);

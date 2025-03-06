@@ -1,44 +1,51 @@
 package org.tiny.mq.nameserver.handler;
 
-import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson2.JSON;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.tiny.mq.common.codec.TcpMessage;
+import org.tiny.mq.common.coder.TcpMsg;
 import org.tiny.mq.common.enums.NameServerEventCode;
-import org.tiny.mq.common.eventbus.Event;
-import org.tiny.mq.common.eventbus.EventBus;
-import org.tiny.mq.nameserver.eventbus.event.ReplicationMsgEvent;
+import org.tiny.mq.common.event.EventBus;
+import org.tiny.mq.common.event.model.Event;
+import org.tiny.mq.nameserver.event.model.ReplicationMsgEvent;
+
 
 @ChannelHandler.Sharable
 public class SlaveReplicationServerHandler extends SimpleChannelInboundHandler {
 
-    private static final Logger logger = LoggerFactory.getLogger(SlaveReplicationServerHandler.class);
-    private final EventBus eventBus;
+    private EventBus eventBus;
 
     public SlaveReplicationServerHandler(EventBus eventBus) {
         this.eventBus = eventBus;
+        this.eventBus.init();
     }
 
+    //1.网络请求的接收(netty完成)
+    //2.事件发布器的实现（EventBus-》event）Spring的事件，Google Guaua
+    //3.事件处理器的实现（Listener-》处理event）
+    //4.数据存储（基于Map本地内存的方式存储）
     @Override
-    protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object o) throws Exception {
-        TcpMessage message = (TcpMessage) o;
-        int code = message.getCode();
-        byte[] body = message.getBody();
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object msg) throws Exception {
+        TcpMsg tcpMsg = (TcpMsg) msg;
+        int code = tcpMsg.getCode();
+        byte[] body = tcpMsg.getBody();
+        //从节点发起链接，在master端通过密码验证，建立链接
         Event event = null;
         if (NameServerEventCode.MASTER_REPLICATION_MSG.getCode() == code) {
-            event = handleReplicationMsgEvent(body);
-        } else {
-            //TODO: 没有任务匹配上
+            event = JSON.parseObject(body, ReplicationMsgEvent.class);
         }
         event.setChannelHandlerContext(channelHandlerContext);
         eventBus.publish(event);
     }
 
-    public ReplicationMsgEvent handleReplicationMsgEvent(byte[] body) {
-        ReplicationMsgEvent event = JSON.parseObject(body, ReplicationMsgEvent.class);
-        return event;
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        super.exceptionCaught(ctx, cause);
     }
 }

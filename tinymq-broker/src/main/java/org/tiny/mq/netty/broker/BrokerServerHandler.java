@@ -1,25 +1,32 @@
 package org.tiny.mq.netty.broker;
 
-import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson2.JSON;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tiny.mq.common.codec.TcpMessage;
+import org.tiny.mq.cache.CommonCache;
+import org.tiny.mq.common.coder.TcpMsg;
 import org.tiny.mq.common.dto.ConsumeMsgAckReqDTO;
 import org.tiny.mq.common.dto.ConsumeMsgReqDTO;
 import org.tiny.mq.common.dto.MessageDTO;
 import org.tiny.mq.common.enums.BrokerEventCode;
-import org.tiny.mq.common.eventbus.Event;
-import org.tiny.mq.common.eventbus.EventBus;
-import org.tiny.mq.eventbus.event.ConsumeMessageAckEvent;
-import org.tiny.mq.eventbus.event.ConsumeMessageEvent;
-import org.tiny.mq.eventbus.event.PushMessageEvent;
+import org.tiny.mq.common.event.EventBus;
+import org.tiny.mq.common.event.model.Event;
+import org.tiny.mq.event.model.ConsumeMsgEvent;
+import org.tiny.mq.event.model.PushMsgEvent;
+import org.tiny.mq.model.ConsumeMsgAckEvent;
+
+import java.net.InetSocketAddress;
+
 
 @ChannelHandler.Sharable
 public class BrokerServerHandler extends SimpleChannelInboundHandler {
+
     private static final Logger logger = LoggerFactory.getLogger(BrokerServerHandler.class);
+
     private EventBus eventBus;
 
     public BrokerServerHandler(EventBus eventBus) {
@@ -28,47 +35,59 @@ public class BrokerServerHandler extends SimpleChannelInboundHandler {
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object o) throws Exception {
-        TcpMessage tcpMessage = (TcpMessage) o;
-        int code = tcpMessage.getCode();
-        byte[] body = tcpMessage.getBody();
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object msg) throws Exception {
+        TcpMsg tcpMsg = (TcpMsg) msg;
+        int code = tcpMsg.getCode();
+        byte[] body = tcpMsg.getBody();
         Event event = null;
-        if (code == BrokerEventCode.PUSH_MSG.getCode()) {
-            event = handlePushMessageEvent(body, channelHandlerContext);
-        } else if (code == BrokerEventCode.CONSUME_MSG.getCode()) {
-            event = handleConsumeMessageEvent(body, channelHandlerContext);
-        } else if (code == BrokerEventCode.CONSUME_SUCCESS_MSG.getCode()) {
-            event = handleConsumeMessageSuccessEvent(body, channelHandlerContext);
+        if (BrokerEventCode.PUSH_MSG.getCode() == code) {
+            MessageDTO messageDTO = JSON.parseObject(body, MessageDTO.class);
+            PushMsgEvent pushMsgEvent = new PushMsgEvent();
+            pushMsgEvent.setMessageDTO(messageDTO);
+            logger.info("收到消息推送内容:{},message is {}", new String(messageDTO.getBody()), JSON.toJSONString(messageDTO));
+            event = pushMsgEvent;
+        } else if (BrokerEventCode.CONSUME_MSG.getCode() == code) {
+            //这里需要设置一个消费者id
+            ConsumeMsgReqDTO consumeMsgReqDTO = JSON.parseObject(body, ConsumeMsgReqDTO.class);
+            InetSocketAddress inetSocketAddress = (InetSocketAddress) channelHandlerContext.channel().remoteAddress();
+            consumeMsgReqDTO.setIp(inetSocketAddress.getHostString());
+            consumeMsgReqDTO.setPort(inetSocketAddress.getPort());
+            ConsumeMsgEvent consumeMsgEvent = new ConsumeMsgEvent();
+            consumeMsgEvent.setConsumeMsgReqDTO(consumeMsgReqDTO);
+            consumeMsgEvent.setMsgId(consumeMsgReqDTO.getMsgId());
+            channelHandlerContext.attr(AttributeKey.valueOf("consumer-reqId")).set(consumeMsgReqDTO.getIp() + ":" + consumeMsgReqDTO.getPort());
+            event = consumeMsgEvent;
+        } else if (BrokerEventCode.CONSUME_SUCCESS_MSG.getCode() == code) {
+            ConsumeMsgAckReqDTO consumeMsgAckReqDTO = JSON.parseObject(body, ConsumeMsgAckReqDTO.class);
+            InetSocketAddress inetSocketAddress = (InetSocketAddress) channelHandlerContext.channel().remoteAddress();
+            consumeMsgAckReqDTO.setIp(inetSocketAddress.getHostString());
+            consumeMsgAckReqDTO.setPort(inetSocketAddress.getPort());
+            ConsumeMsgAckEvent consumeMsgAckEvent = new ConsumeMsgAckEvent();
+            consumeMsgAckEvent.setConsumeMsgAckReqDTO(consumeMsgAckReqDTO);
+            consumeMsgAckEvent.setMsgId(consumeMsgAckReqDTO.getMsgId());
+            event = consumeMsgAckEvent;
         }
         event.setChannelHandlerContext(channelHandlerContext);
         eventBus.publish(event);
     }
 
-    private ConsumeMessageAckEvent handleConsumeMessageSuccessEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {
-        ConsumeMsgAckReqDTO consumeMsgAckReqDTO = JSON.parseObject(body, ConsumeMsgAckReqDTO.class);
-        ConsumeMessageAckEvent consumeMessageAckEvent = new ConsumeMessageAckEvent();
-        consumeMessageAckEvent.setConsumeMsgReqDTO(consumeMsgAckReqDTO);
-        return consumeMessageAckEvent;
-    }
-
-    private ConsumeMessageEvent handleConsumeMessageEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {
-        ConsumeMsgReqDTO consumeMsgReqDTO = JSON.parseObject(body, ConsumeMsgReqDTO.class);
-        ConsumeMessageEvent consumeMessageEvent = new ConsumeMessageEvent();
-        consumeMessageEvent.setConsumeMsgReqDTO(consumeMsgReqDTO);
-        return consumeMessageEvent;
-    }
-
-    private PushMessageEvent handlePushMessageEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {
-        MessageDTO messageDTO = JSON.parseObject(body, MessageDTO.class);
-        PushMessageEvent pushMessageEvent = new PushMessageEvent();
-        pushMessageEvent.setMessageDTO(messageDTO);
-        return pushMessageEvent;
-    }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         super.exceptionCaught(ctx, cause);
         logger.error("error is :", cause);
+    }
+
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        super.channelInactive(ctx);
+        //链接断开的时候，从重平衡池中移除
+        Object reqId = ctx.attr(AttributeKey.valueOf("consumer-reqId")).get();
+        if (reqId == null) {
+            return;
+        }
+        CommonCache.getConsumerInstancePool().removeFromInstancePool(String.valueOf(reqId));
     }
 
     @Override

@@ -1,63 +1,48 @@
 package org.tiny.mq.nameserver.handler;
 
-import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson2.JSON;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.tiny.mq.common.codec.TcpMessage;
+import org.tiny.mq.common.coder.TcpMsg;
 import org.tiny.mq.common.enums.NameServerEventCode;
-import org.tiny.mq.common.eventbus.Event;
-import org.tiny.mq.common.eventbus.EventBus;
-import org.tiny.mq.nameserver.eventbus.event.SlaveHeartBeatEvent;
-import org.tiny.mq.nameserver.eventbus.event.SlaveReplicationMsgAckEvent;
-import org.tiny.mq.nameserver.eventbus.event.StartReplicationEvent;
+import org.tiny.mq.common.event.EventBus;
+import org.tiny.mq.common.event.model.Event;
+import org.tiny.mq.nameserver.event.model.SlaveHeartBeatEvent;
+import org.tiny.mq.nameserver.event.model.SlaveReplicationMsgAckEvent;
+import org.tiny.mq.nameserver.event.model.StartReplicationEvent;
+
 
 @ChannelHandler.Sharable
 public class MasterReplicationServerHandler extends SimpleChannelInboundHandler {
-    private static final Logger logger = LoggerFactory.getLogger(MasterReplicationServerHandler.class);
-    private final EventBus eventBus;
+
+    private EventBus eventBus;
 
     public MasterReplicationServerHandler(EventBus eventBus) {
         this.eventBus = eventBus;
+        this.eventBus.init();
     }
 
+    //1.网络请求的接收(netty完成)
+    //2.事件发布器的实现（EventBus-》event）Spring的事件，Google Guaua
+    //3.事件处理器的实现（Listener-》处理event）
+    //4.数据存储（基于Map本地内存的方式存储）
     @Override
-    protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object o) throws Exception {
-        TcpMessage message = (TcpMessage) o;
-        int code = message.getCode();
-        byte[] body = message.getBody();
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object msg) throws Exception {
+        TcpMsg tcpMsg = (TcpMsg) msg;
+        int code = tcpMsg.getCode();
+        byte[] body = tcpMsg.getBody();
+        //从节点发起链接，在master端通过密码验证，建立链接
         Event event = null;
-        // 从节点发送连接，在master节点通过密码验证，建立连接
-        // 连接建立完成后master收到的数据 同步发送给slave节点
         if (NameServerEventCode.START_REPLICATION.getCode() == code) {
-            event = handleStartReplicationEvent(body);
+            event = JSON.parseObject(body, StartReplicationEvent.class);
         } else if (NameServerEventCode.SLAVE_HEART_BEAT.getCode() == code) {
-            event = handleSlaveHeartBeatEvent(body);
+            event = new SlaveHeartBeatEvent();
         } else if (NameServerEventCode.SLAVE_REPLICATION_ACK_MSG.getCode() == code) {
-            event = handleSalveReplicationMsgAckEvent(body);
-        } else {
-            // TODO: 没有匹配事件
+            event = JSON.parseObject(body, SlaveReplicationMsgAckEvent.class);
         }
         event.setChannelHandlerContext(channelHandlerContext);
         eventBus.publish(event);
-    }
-
-    public StartReplicationEvent handleStartReplicationEvent(byte[] body) {
-        StartReplicationEvent event = JSON.parseObject(body, StartReplicationEvent.class);
-        logger.info("salve node {} start replication", event.getSlaveIPAddr());
-        return event;
-    }
-
-    public SlaveHeartBeatEvent handleSlaveHeartBeatEvent(byte[] body) {
-        SlaveHeartBeatEvent event = JSON.parseObject(body, SlaveHeartBeatEvent.class);
-        return event;
-    }
-
-    public SlaveReplicationMsgAckEvent handleSalveReplicationMsgAckEvent(byte[] body) {
-        SlaveReplicationMsgAckEvent event = JSON.parseObject(body, SlaveReplicationMsgAckEvent.class);
-        return event;
     }
 
     @Override

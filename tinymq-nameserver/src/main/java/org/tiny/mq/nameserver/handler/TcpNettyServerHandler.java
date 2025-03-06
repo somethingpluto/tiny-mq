@@ -5,109 +5,80 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.internal.StringUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.tiny.mq.common.codec.TcpMessage;
+import org.tiny.mq.common.coder.TcpMsg;
 import org.tiny.mq.common.dto.HeartBeatDTO;
-import org.tiny.mq.common.dto.PullBrokerIpReqDTO;
+import org.tiny.mq.common.dto.PullBrokerIpDTO;
 import org.tiny.mq.common.dto.ServiceRegistryReqDTO;
 import org.tiny.mq.common.enums.NameServerEventCode;
-import org.tiny.mq.common.enums.NameServerResponseCode;
-import org.tiny.mq.common.eventbus.Event;
-import org.tiny.mq.common.eventbus.EventBus;
-import org.tiny.mq.nameserver.eventbus.event.HeartBeatEvent;
-import org.tiny.mq.nameserver.eventbus.event.PullBrokerIPListEvent;
-import org.tiny.mq.nameserver.eventbus.event.RegistryEvent;
-import org.tiny.mq.nameserver.eventbus.event.UnRegistryEvent;
+import org.tiny.mq.common.event.EventBus;
+import org.tiny.mq.common.event.model.Event;
+import org.tiny.mq.nameserver.event.model.HeartBeatEvent;
+import org.tiny.mq.nameserver.event.model.PullBrokerIpEvent;
+import org.tiny.mq.nameserver.event.model.RegistryEvent;
+import org.tiny.mq.nameserver.event.model.UnRegistryEvent;
 
 import java.net.InetSocketAddress;
 
 
-/**
- * TCP 连接注册事件处理器
- */
 @ChannelHandler.Sharable
 public class TcpNettyServerHandler extends SimpleChannelInboundHandler {
-    private static final Logger logger = LoggerFactory.getLogger(TcpNettyServerHandler.class);
-    private final EventBus eventBus;
 
+    private EventBus eventBus;
 
     public TcpNettyServerHandler(EventBus eventBus) {
         this.eventBus = eventBus;
+        this.eventBus.init();
     }
 
-
-    /**
-     * accept tcp connect judge type
-     *
-     * @param channelHandlerContext
-     * @param o
-     * @throws Exception
-     */
+    //1.网络请求的接收(netty完成)
+    //2.事件发布器的实现（EventBus-》event）Spring的事件，Google Guaua
+    //3.事件处理器的实现（Listener-》处理event）
+    //4.数据存储（基于Map本地内存的方式存储）
     @Override
-    protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object o) {
-        TcpMessage message = (TcpMessage) o;
-        int code = message.getCode();
-        byte[] body = message.getBody();
-        Event event;
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object msg) throws Exception {
+        TcpMsg tcpMsg = (TcpMsg) msg;
+        int code = tcpMsg.getCode();
+        byte[] body = tcpMsg.getBody();
+        Event event = null;
         if (NameServerEventCode.REGISTRY.getCode() == code) {
-            event = handleRegistryEvent(body, channelHandlerContext);
+            ServiceRegistryReqDTO serviceRegistryReqDTO = JSON.parseObject(body, ServiceRegistryReqDTO.class);
+            RegistryEvent registryEvent = new RegistryEvent();
+            registryEvent.setMsgId(serviceRegistryReqDTO.getMsgId());
+            registryEvent.setPassword(serviceRegistryReqDTO.getPassword());
+            registryEvent.setUser(serviceRegistryReqDTO.getUser());
+            registryEvent.setAttrs(serviceRegistryReqDTO.getAttrs());
+            registryEvent.setRegistryType(serviceRegistryReqDTO.getRegistryType());
+            if (StringUtil.isNullOrEmpty(serviceRegistryReqDTO.getIp())) {
+                InetSocketAddress inetSocketAddress = (InetSocketAddress) channelHandlerContext.channel().remoteAddress();
+                registryEvent.setPort(inetSocketAddress.getPort());
+                registryEvent.setIp(inetSocketAddress.getHostString());
+            } else {
+                registryEvent.setPort(serviceRegistryReqDTO.getPort());
+                registryEvent.setIp(serviceRegistryReqDTO.getIp());
+            }
+            event = registryEvent;
         } else if (NameServerEventCode.HEART_BEAT.getCode() == code) {
-            event = handleHeartBeatEvent(body, channelHandlerContext);
-        } else if (NameServerEventCode.UN_REGISTRY.getCode() == code) {
-            event = handleUnRegistryEvent(body, channelHandlerContext);
+            HeartBeatDTO heartBeatDTO = JSON.parseObject(body, HeartBeatDTO.class);
+            HeartBeatEvent heartBeatEvent = new HeartBeatEvent();
+            heartBeatEvent.setMsgId(heartBeatDTO.getMsgId());
+            event = heartBeatEvent;
         } else if (NameServerEventCode.PULL_BROKER_IP_LIST.getCode() == code) {
-            event = handlePullBrokerIPListEvent(body, channelHandlerContext);
-        } else {
-            handleUnknownEvent(channelHandlerContext);
-            return;
+            PullBrokerIpDTO pullBrokerIpDTO = JSON.parseObject(body, PullBrokerIpDTO.class);
+            PullBrokerIpEvent pullBrokerIpEvent = new PullBrokerIpEvent();
+            pullBrokerIpEvent.setRole(pullBrokerIpDTO.getRole());
+            pullBrokerIpEvent.setMsgId(pullBrokerIpDTO.getMsgId());
+            event = pullBrokerIpEvent;
         }
         event.setChannelHandlerContext(channelHandlerContext);
         eventBus.publish(event);
     }
 
-    private PullBrokerIPListEvent handlePullBrokerIPListEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {
-        PullBrokerIpReqDTO pullBrokerIpReqDTO = JSON.parseObject(body, PullBrokerIpReqDTO.class);
-        PullBrokerIPListEvent pullBrokerIPListEvent = new PullBrokerIPListEvent();
-        pullBrokerIPListEvent.setRole(pullBrokerIpReqDTO.getRole());
-        pullBrokerIPListEvent.setMsgId(pullBrokerIpReqDTO.getMsgId());
-        return pullBrokerIPListEvent;
-    }
-
-
-    private RegistryEvent handleRegistryEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {
-        ServiceRegistryReqDTO serviceRegistryReqDTO = JSON.parseObject(body, ServiceRegistryReqDTO.class);
-        RegistryEvent registryEvent = new RegistryEvent();
-        registryEvent.setMsgId(serviceRegistryReqDTO.getMsgId());
-        registryEvent.setUser(serviceRegistryReqDTO.getUser());
-        registryEvent.setPassword(serviceRegistryReqDTO.getPassword());
-        registryEvent.setRegistryType(serviceRegistryReqDTO.getRegistryType());
-        if (StringUtil.isNullOrEmpty(serviceRegistryReqDTO.getIp())) {
-            InetSocketAddress inetSocketAddress = (InetSocketAddress) channelHandlerContext.channel().remoteAddress();
-            registryEvent.setPort(inetSocketAddress.getPort());
-            registryEvent.setIp(inetSocketAddress.getHostString());
-        } else {
-            registryEvent.setPort(serviceRegistryReqDTO.getPort());
-            registryEvent.setIp(serviceRegistryReqDTO.getIp());
-        }
-        return registryEvent;
-    }
-
-    private HeartBeatEvent handleHeartBeatEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {
-        HeartBeatDTO heartBeatDTO = JSON.parseObject(body, HeartBeatDTO.class);
-        HeartBeatEvent heartBeatEvent = new HeartBeatEvent();
-        heartBeatEvent.setMsgId(heartBeatDTO.getMsgId());
-        return heartBeatEvent;
-    }
-
-    private UnRegistryEvent handleUnRegistryEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {
-        return JSON.parseObject(body, UnRegistryEvent.class);
-    }
-
-    private void handleUnknownEvent(ChannelHandlerContext channelHandlerContext) {
-        TcpMessage unknownMessage = new TcpMessage(NameServerResponseCode.UNKNOWN_EVENT.getCode(), NameServerResponseCode.UNKNOWN_EVENT.getDesc().getBytes());
-        channelHandlerContext.writeAndFlush(unknownMessage);
-        channelHandlerContext.close();
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        //如果依赖任务剔除节点，会有三个心跳周期的延迟，做到链接断开立马剔除的效果
+        UnRegistryEvent unRegistryEvent = new UnRegistryEvent();
+        unRegistryEvent.setChannelHandlerContext(ctx);
+        eventBus.publish(unRegistryEvent);
     }
 
     @Override

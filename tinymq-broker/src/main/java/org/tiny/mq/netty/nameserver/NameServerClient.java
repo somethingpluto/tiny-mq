@@ -2,6 +2,8 @@ package org.tiny.mq.netty.nameserver;
 
 import com.alibaba.fastjson.JSON;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -9,113 +11,97 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.DelimiterBasedFrameDecoder;
+import io.netty.util.internal.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tiny.mq.common.codec.TcpMessage;
-import org.tiny.mq.common.codec.TcpMessageDecoder;
-import org.tiny.mq.common.codec.TcpMessageEncoder;
+import org.tiny.mq.cache.CommonCache;
+import org.tiny.mq.common.coder.TcpMsg;
+import org.tiny.mq.common.coder.TcpMsgDecoder;
+import org.tiny.mq.common.coder.TcpMsgEncoder;
+import org.tiny.mq.common.constants.TcpConstants;
 import org.tiny.mq.common.dto.ServiceRegistryReqDTO;
 import org.tiny.mq.common.enums.NameServerEventCode;
 import org.tiny.mq.common.enums.RegistryTypeEnum;
-import org.tiny.mq.config.GlobalCache;
-import org.tiny.mq.model.nameserver.NameServerConfigModel;
+import org.tiny.mq.config.GlobalProperties;
 
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
-/**
- * 与NameServer服务端建立连接
- */
 public class NameServerClient {
-    private static final Logger logger = LoggerFactory.getLogger(NameServerClient.class);
 
-    private final EventLoopGroup clientGroup = new NioEventLoopGroup();
-    private final Bootstrap bootstrap = new Bootstrap();
-    private final String clientIP;
-    private final Integer clientPort;
-    private final NameServerConfigModel nameServerConfig;
+    private final Logger logger = LoggerFactory.getLogger(NameServerClient.class);
+
+    private EventLoopGroup clientGroup = new NioEventLoopGroup();
+    private Bootstrap bootstrap = new Bootstrap();
     private Channel channel;
-
-
-    public NameServerClient() {
-        try {
-            this.clientIP = Inet4Address.getLocalHost().getHostAddress();
-            this.nameServerConfig = GlobalCache.getNameServerConfig();
-            this.clientPort = this.nameServerConfig.getBrokerPort();
-        } catch (UnknownHostException e) {
-            throw new RuntimeException(e);
-        }
-
-    }
+    private String DEFAULT_NAMESERVER_IP = "127.0.0.1";
 
     /**
-     * 初始化连接
+     * 初始化链接
      */
     public void initConnection() {
-        NameServerConfigModel nameServerConfig = GlobalCache.getNameServerConfig();
-        String nameserverIP = nameServerConfig.getNameserverIP();
-        Integer nameserverPort = nameServerConfig.getNameserverPort();
+        String ip = CommonCache.getGlobalProperties().getNameserverIp();
+        Integer port = CommonCache.getGlobalProperties().getNameserverPort();
+        if (StringUtil.isNullOrEmpty(ip) || port == null || port < 0) {
+            throw new RuntimeException("error port or ip");
+        }
         bootstrap.group(clientGroup);
         bootstrap.channel(NioSocketChannel.class);
         bootstrap.handler(new ChannelInitializer<SocketChannel>() {
             @Override
-            protected void initChannel(SocketChannel socketChannel) throws Exception {
-                socketChannel.pipeline().addLast(new TcpMessageDecoder());
-                socketChannel.pipeline().addLast(new TcpMessageEncoder());
-                socketChannel.pipeline().addLast(new NameServerRespChannelHandler());
+            protected void initChannel(SocketChannel ch) throws Exception {
+                ByteBuf delimiter = Unpooled.copiedBuffer(TcpConstants.DEFAULT_DECODE_CHAR.getBytes());
+                ch.pipeline().addLast(new DelimiterBasedFrameDecoder(1024 * 8, delimiter));
+                ch.pipeline().addLast(new TcpMsgDecoder());
+                ch.pipeline().addLast(new TcpMsgEncoder());
+                ch.pipeline().addLast(new NameServerRespChannelHandler());
             }
         });
         ChannelFuture channelFuture = null;
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             clientGroup.shutdownGracefully();
-            logger.info("{}:{} client shut down", this.clientIP, this.clientPort);
+            logger.info("nameserver client is closed");
         }));
         try {
-            channelFuture = bootstrap.connect(nameserverIP, nameserverPort).sync();
+            channelFuture = bootstrap.connect(ip, port).sync();
             channel = channelFuture.channel();
+            logger.info("success connected to nameserver!");
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
     }
 
     public Channel getChannel() {
-        if (this.channel == null) {
-            throw new RuntimeException("channel has not been connected");
+        if (channel == null) {
+            throw new RuntimeException("channel has not been connected!");
         }
-        return this.channel;
+        return channel;
     }
 
-    public void sendRegistryMessage() {
-        ServiceRegistryReqDTO serviceRegistryReqDTO = new ServiceRegistryReqDTO();
+    public void sendRegistryMsg() {
+        ServiceRegistryReqDTO registryDTO = new ServiceRegistryReqDTO();
         try {
             Map<String, Object> attrs = new HashMap<>();
             //todo 先写死
             attrs.put("role", "single");
-            NameServerConfigModel nameServerConfig = GlobalCache.getNameServerConfig();
-            serviceRegistryReqDTO.setIp(this.clientIP);
-            serviceRegistryReqDTO.setPort(nameServerConfig.getBrokerPort());
-            serviceRegistryReqDTO.setUser(nameServerConfig.getNameserverUser());
-            serviceRegistryReqDTO.setPassword(nameServerConfig.getNameServerPassword());
-            serviceRegistryReqDTO.setRegistryType(RegistryTypeEnum.BROKER.getType());
-            serviceRegistryReqDTO.setAttrs(attrs);
-            serviceRegistryReqDTO.setMsgId(UUID.randomUUID().toString());
-            byte[] body = JSON.toJSONBytes(serviceRegistryReqDTO);
-            TcpMessage message = new TcpMessage(NameServerEventCode.REGISTRY.getCode(), body);
-            channel.writeAndFlush(message);
-            logger.info("{}:{} send register request to nameserver{}:{}", this.clientIP, this.clientPort, nameServerConfig.getNameserverIP(), nameServerConfig.getNameserverPort());
-        } catch (Exception e) {
+            //broker是主从架构,producer（主发送数据）,consumer(主，从拉数据)
+            registryDTO.setIp(Inet4Address.getLocalHost().getHostAddress());
+            GlobalProperties globalProperties = CommonCache.getGlobalProperties();
+            registryDTO.setPort(globalProperties.getBrokerPort());
+            registryDTO.setUser(globalProperties.getNameserverUser());
+            registryDTO.setPassword(globalProperties.getNameserverPassword());
+            registryDTO.setRegistryType(RegistryTypeEnum.BROKER.getCode());
+            registryDTO.setAttrs(attrs);
+            byte[] body = JSON.toJSONBytes(registryDTO);
+            TcpMsg tcpMsg = new TcpMsg(NameServerEventCode.REGISTRY.getCode(), body);
+            channel.writeAndFlush(tcpMsg);
+            logger.info("发送注册事件");
+        } catch (UnknownHostException e) {
             throw new RuntimeException(e);
         }
-    }
 
-    public String getClientIP() {
-        return clientIP;
-    }
-
-    public Integer getClientPort() {
-        return clientPort;
     }
 }

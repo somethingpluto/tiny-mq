@@ -2,13 +2,17 @@ package org.tiny.mq.common.dto;
 
 import io.netty.channel.ChannelHandlerContext;
 
-import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class SlaveAckDTO implements Serializable {
+public class SlaveAckDTO {
 
+    /**
+     * 需要接收多少个从节点的ack信号
+     */
     private AtomicInteger needAckTime;
-
+    /**
+     * broker连接主节点的channel
+     */
     private ChannelHandlerContext brokerChannel;
 
     public SlaveAckDTO(AtomicInteger needAckTime, ChannelHandlerContext brokerChannel) {
@@ -30,13 +34,5 @@ public class SlaveAckDTO implements Serializable {
 
     public void setBrokerChannel(ChannelHandlerContext brokerChannel) {
         this.brokerChannel = brokerChannel;
-    }
-
-    @Override
-    public String toString() {
-        return "SlaveAckDTO{" +
-                "needAckTime=" + needAckTime +
-                ", brokerChannel=" + brokerChannel +
-                '}';
     }
 }

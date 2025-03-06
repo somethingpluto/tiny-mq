@@ -1,14 +1,20 @@
 package org.tiny.mq.common.dto;
 
-/**
- * Consumer消费请求
- */
 public class ConsumeMsgReqDTO extends BaseBrokerRemoteDTO {
+
     private String topic;
-    private String consumerGroup;
+    private String consumeGroup;
     private String ip;
     private Integer port;
     private Integer batchSize;
+
+    public Integer getBatchSize() {
+        return batchSize;
+    }
+
+    public void setBatchSize(Integer batchSize) {
+        this.batchSize = batchSize;
+    }
 
     public String getTopic() {
         return topic;
@@ -18,12 +24,12 @@ public class ConsumeMsgReqDTO extends BaseBrokerRemoteDTO {
         this.topic = topic;
     }
 
-    public String getConsumerGroup() {
-        return consumerGroup;
+    public String getConsumeGroup() {
+        return consumeGroup;
     }
 
-    public void setConsumerGroup(String consumerGroup) {
-        this.consumerGroup = consumerGroup;
+    public void setConsumeGroup(String consumeGroup) {
+        this.consumeGroup = consumeGroup;
     }
 
     public String getIp() {
@@ -40,24 +46,5 @@ public class ConsumeMsgReqDTO extends BaseBrokerRemoteDTO {
 
     public void setPort(Integer port) {
         this.port = port;
-    }
-
-    public Integer getBatchSize() {
-        return batchSize;
-    }
-
-    public void setBatchSize(Integer batchSize) {
-        this.batchSize = batchSize;
-    }
-
-    @Override
-    public String toString() {
-        return "ConsumeMsgReqDTO{" +
-                "topic='" + topic + '\'' +
-                ", consumerGroup='" + consumerGroup + '\'' +
-                ", ip='" + ip + '\'' +
-                ", port=" + port +
-                ", batchSize=" + batchSize +
-                "} " + super.toString();
     }
 }

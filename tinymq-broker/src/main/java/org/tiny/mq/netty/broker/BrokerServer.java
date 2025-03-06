@@ -1,55 +1,62 @@
 package org.tiny.mq.netty.broker;
 
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tiny.mq.common.codec.TcpMessageDecoder;
-import org.tiny.mq.common.codec.TcpMessageEncoder;
-import org.tiny.mq.common.eventbus.EventBus;
+import org.tiny.mq.common.coder.TcpMsgDecoder;
+import org.tiny.mq.common.coder.TcpMsgEncoder;
+import org.tiny.mq.common.constants.TcpConstants;
+import org.tiny.mq.common.event.EventBus;
+
 
 public class BrokerServer {
-    private static final Logger logger = LoggerFactory.getLogger(BrokerServer.class);
+
+    private static Logger logger = LoggerFactory.getLogger(BrokerServer.class);
+
     private int port;
-    private NioEventLoopGroup bossGroup = new NioEventLoopGroup();
-    private NioEventLoopGroup workerGroup = new NioEventLoopGroup();
-    private ServerBootstrap serverBootstrap;
 
-    public BrokerServer(Integer brokerPort) {
-        this.port = brokerPort;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public void setPort(int port) {
+    public BrokerServer(int port) {
         this.port = port;
     }
 
+
+    /**
+     * 启动服务端程序
+     *
+     * @throws InterruptedException
+     */
     public void startServer() throws InterruptedException {
-        serverBootstrap = new ServerBootstrap();
-        serverBootstrap.group(bossGroup, workerGroup);
-        serverBootstrap.channel(NioServerSocketChannel.class);
-        serverBootstrap.childHandler(new ChannelInitializer<Channel>() {
+        NioEventLoopGroup bossGroup = new NioEventLoopGroup();
+        NioEventLoopGroup workerGroup = new NioEventLoopGroup();
+        ServerBootstrap bootstrap = new ServerBootstrap();
+        bootstrap.group(bossGroup, workerGroup);
+        bootstrap.channel(NioServerSocketChannel.class);
+        bootstrap.childHandler(new ChannelInitializer<Channel>() {
             @Override
-            protected void initChannel(Channel channel) throws Exception {
-                channel.pipeline().addLast(new TcpMessageDecoder());
-                channel.pipeline().addLast(new TcpMessageEncoder());
-                channel.pipeline().addLast(new BrokerServerHandler(new EventBus("broker-event-bus")));
+            protected void initChannel(Channel ch) throws Exception {
+                ByteBuf delimiter = Unpooled.copiedBuffer(TcpConstants.DEFAULT_DECODE_CHAR.getBytes());
+                ch.pipeline().addLast(new DelimiterBasedFrameDecoder(1024 * 8, delimiter));
+                ch.pipeline().addLast(new TcpMsgDecoder());
+                ch.pipeline().addLast(new TcpMsgEncoder());
+                ch.pipeline().addLast(new BrokerServerHandler(new EventBus("broker-server-handle")));
             }
         });
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
-            logger.info("broker server is closed");
+            logger.info("broker is closed");
         }));
-        ChannelFuture channelFuture = serverBootstrap.bind(port).sync();
-        logger.info("start broker server on port:{}", port);
+        ChannelFuture channelFuture = bootstrap.bind(port).sync();
+        logger.info("start nameserver application on port:{}", port);
+        //阻塞代码
         channelFuture.channel().closeFuture().sync();
     }
 }

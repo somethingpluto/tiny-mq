@@ -1,19 +1,24 @@
 package org.tiny.mq.consumer;
 
+
 import org.tiny.mq.common.enums.ConsumeResultStatus;
 
 public class ConsumeResult {
-    private int consumeResultStatus;
 
-    public ConsumeResult(int consumeResultStatus) {
-        this.consumeResultStatus = consumeResultStatus;
-    }
+    /**
+     * 消费结果
+     */
+    private int consumeResultStatus;
 
     public int getConsumeResultStatus() {
         return consumeResultStatus;
     }
 
     public void setConsumeResultStatus(int consumeResultStatus) {
+        this.consumeResultStatus = consumeResultStatus;
+    }
+
+    public ConsumeResult(int consumeResultStatus) {
         this.consumeResultStatus = consumeResultStatus;
     }
 

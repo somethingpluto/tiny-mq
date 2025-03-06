@@ -1,21 +1,26 @@
 package org.tiny.mq.common.dto;
 
+
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * 服务注册请求DTO
- */
+
 public class ServiceRegistryReqDTO extends BaseNameServerRemoteDTO {
+
     private String registryType;
     private String user;
     private String password;
     private String ip;
     private Integer port;
+    //后续会用到 todo
     private Map<String, Object> attrs = new HashMap<>();
 
-    public void setPort(Integer port) {
-        this.port = port;
+    public Map<String, Object> getAttrs() {
+        return attrs;
+    }
+
+    public void setAttrs(Map<String, Object> attrs) {
+        this.attrs = attrs;
     }
 
     public String getRegistryType() {
@@ -54,23 +59,7 @@ public class ServiceRegistryReqDTO extends BaseNameServerRemoteDTO {
         return port;
     }
 
-    public Map<String, Object> getAttrs() {
-        return attrs;
-    }
-
-    public void setAttrs(Map<String, Object> attrs) {
-        this.attrs = attrs;
-    }
-
-    @Override
-    public String toString() {
-        return "ServiceRegistryReqDTO{" +
-                "registryType='" + registryType + '\'' +
-                ", user='" + user + '\'' +
-                ", password='" + password + '\'' +
-                ", ip='" + ip + '\'' +
-                ", port=" + port +
-                ", attrs=" + attrs +
-                "} " + super.toString();
+    public void setPort(Integer port) {
+        this.port = port;
     }
 }

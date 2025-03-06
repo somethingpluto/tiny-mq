@@ -1,21 +1,23 @@
 package org.tiny.mq.producer;
 
+
 import org.tiny.mq.common.dto.MessageDTO;
 
 public interface Producer {
+
     /**
      * 同步发送
      *
-     * @param message
+     * @param messageDTO
      * @return
      */
-    SendResult sendMessage(MessageDTO message);
+    SendResult send(MessageDTO messageDTO);
 
     /**
      * 异步发送
      *
-     * @param message
+     * @param messageDTO
      * @return
      */
-    void sendAsyncMessage(MessageDTO message);
+    void sendAsync(MessageDTO messageDTO);
 }

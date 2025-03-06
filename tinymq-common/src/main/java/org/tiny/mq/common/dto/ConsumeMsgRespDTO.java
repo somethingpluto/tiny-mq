@@ -3,8 +3,17 @@ package org.tiny.mq.common.dto;
 import java.util.List;
 
 public class ConsumeMsgRespDTO {
+
+    /**
+     * 队列id
+     */
     private Integer queueId;
+
+    /**
+     * 拉数据返回内容
+     */
     private List<byte[]> commitLogContentList;
+
 
     public Integer getQueueId() {
         return queueId;
@@ -20,13 +29,5 @@ public class ConsumeMsgRespDTO {
 
     public void setCommitLogContentList(List<byte[]> commitLogContentList) {
         this.commitLogContentList = commitLogContentList;
-    }
-
-    @Override
-    public String toString() {
-        return "ConsumeMsgRespDTO{" +
-                "queueId=" + queueId +
-                ", commitLogContentList=" + commitLogContentList +
-                '}';
     }
 }

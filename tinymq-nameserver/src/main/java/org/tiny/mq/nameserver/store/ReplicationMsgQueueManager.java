@@ -1,37 +1,38 @@
 package org.tiny.mq.nameserver.store;
 
-import org.tiny.mq.nameserver.config.GlobalConfig;
+
+import org.tiny.mq.nameserver.common.CommonCache;
+import org.tiny.mq.nameserver.common.TraceReplicationProperties;
 import org.tiny.mq.nameserver.enums.ReplicationModeEnum;
 import org.tiny.mq.nameserver.enums.ReplicationRoleEnum;
-import org.tiny.mq.nameserver.eventbus.event.ReplicationMsgEvent;
-import org.tiny.mq.nameserver.model.TraceReplicationConfigModel;
+import org.tiny.mq.nameserver.event.model.ReplicationMsgEvent;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
-/**
- * 复制信息队列管理
- */
 public class ReplicationMsgQueueManager {
-    private final BlockingQueue<ReplicationMsgEvent> replicationMsgQueue = new ArrayBlockingQueue<>(5000);
+
+    private BlockingQueue<ReplicationMsgEvent> replicationMsgQueue = new ArrayBlockingQueue(5000);
+
+    public BlockingQueue<ReplicationMsgEvent> getReplicationMsgQueue() {
+        return replicationMsgQueue;
+    }
 
     public void put(ReplicationMsgEvent replicationMsgEvent) {
-        String mode = GlobalConfig.getNameserverConfig().getReplicationMode();
-        ReplicationModeEnum replicationMode = ReplicationModeEnum.of(mode);
-        if (replicationMode == null) {
-            // 单机架构 不做处理
+        ReplicationModeEnum replicationModeEnum = ReplicationModeEnum.of(CommonCache.getNameserverProperties().getReplicationMode());
+        if (replicationModeEnum == null) {
+            //单机架构，不做复制处理
             return;
         }
-        if (replicationMode == ReplicationModeEnum.MASTER_SLAVE) {
-            String role = GlobalConfig.getNameserverConfig().getMasterSlaveReplicationConfigModel().getRole();
-            ReplicationRoleEnum replicationRole = ReplicationRoleEnum.of(role);
-            if (replicationRole != ReplicationRoleEnum.MASTER) {
+        if (replicationModeEnum == ReplicationModeEnum.MASTER_SLAVE) {
+            ReplicationRoleEnum roleEnum = ReplicationRoleEnum.of(CommonCache.getNameserverProperties().getMasterSlaveReplicationProperties().getRole());
+            if (roleEnum != ReplicationRoleEnum.MASTER) {
                 return;
             }
-            this.sendMsgToQueue(replicationMsgEvent); // 主从模式下 只有主节点能向队列发送信息
-        } else if (replicationMode == ReplicationModeEnum.TRACE) {
-            TraceReplicationConfigModel traceReplicationConfig = GlobalConfig.getNameserverConfig().getTraceReplicationConfigModel();
-            if (traceReplicationConfig.getNextNode() != null) {
+            this.sendMsgToQueue(replicationMsgEvent);
+        } else if (replicationModeEnum == ReplicationModeEnum.TRACE) {
+            TraceReplicationProperties traceReplicationProperties = CommonCache.getNameserverProperties().getTraceReplicationProperties();
+            if (traceReplicationProperties.getNextNode() != null) {
                 this.sendMsgToQueue(replicationMsgEvent);
             }
         }
@@ -43,9 +44,5 @@ public class ReplicationMsgQueueManager {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public BlockingQueue<ReplicationMsgEvent> getReplicationMsgQueue() {
-        return replicationMsgQueue;
     }
 }

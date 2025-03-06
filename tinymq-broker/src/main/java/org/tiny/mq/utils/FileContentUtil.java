@@ -3,37 +3,36 @@ package org.tiny.mq.utils;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.IOException;
+
 
 public class FileContentUtil {
 
-    /**
-     * 读取指定路径下文件内容
-     * @param path
-     * @return
-     */
-    public static String readFromFile(String path){
-        try(BufferedReader in = new BufferedReader(new FileReader(path))) {
-            StringBuilder stringBuffer = new StringBuilder();
-            while (in.ready()){
-                stringBuffer.append(in.readLine());
+    public static String readFromFile(String path) {
+        try (BufferedReader in = new BufferedReader(new FileReader(path))) {
+            StringBuffer stb = new StringBuffer();
+            while (in.ready()) {
+                stb.append(in.readLine());
             }
-            return stringBuffer.toString();
-        }catch (Exception e){
+            return stb.toString();
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    /**
-     * 向指定路径写入文件
-     * @param path
-     * @param content
-     */
-    public static void overWriteToFile(String path,String content){
-        try(FileWriter fileWriter = new FileWriter(path)) {
+    public static void overWriteToFile(String path, String content) {
+        try (FileWriter fileWriter = new FileWriter(path)) {
             fileWriter.write(content);
             fileWriter.flush();
-        }catch (Exception e){
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
+
+//    public static void main(String[] args) {
+//        String content = FileContentReaderUtil.readFromFile("/Users/linhao/IdeaProjects-new/eaglemq/broker/config/eaglemq-topic.json");
+//        System.out.println(content);
+//        List<EagleMqTopicModel> eagleMqTopicModelList = JSON.parseArray(content, EagleMqTopicModel.class);
+//        System.out.println(eagleMqTopicModelList);
+//    }
 }

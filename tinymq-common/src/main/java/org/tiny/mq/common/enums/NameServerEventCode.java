@@ -1,25 +1,22 @@
 package org.tiny.mq.common.enums;
 
 
-/**
- * 注册中心事件编码
- */
 public enum NameServerEventCode {
+    REGISTRY(1, "注册事件"),
+    UN_REGISTRY(2, "下线事件"),
+    HEART_BEAT(3, "心跳事件"),
+    START_REPLICATION(4, "开启复制"),
+    MASTER_START_REPLICATION_ACK(5, "master回应slave节点开启同步"),
+    MASTER_REPLICATION_MSG(6, "主从同步数据"),
+    SLAVE_HEART_BEAT(7, "从节点心跳数据"),
+    SLAVE_REPLICATION_ACK_MSG(8, "从节点接收同步数据成功"),
+    NODE_REPLICATION_MSG(9, "节点复制数据"),
+    NODE_REPLICATION_ACK_MSG(10, "链式复制中数据同步成功信号"),
+    PULL_BROKER_IP_LIST(11, "拉取broker的主节点ip地址"),
+    ;
 
-    REGISTRY(10001, "registry event"),
-    UN_REGISTRY(10002, "un_registry event"),
-    HEART_BEAT(10003, "heart beat"),
-    START_REPLICATION(10004, "start replication"),
-    MASTER_START_REPLICATION_ACK(10005, "master start answer replication"),
-    MASTER_REPLICATION_MSG(10006, "master slave sync data"),
-    SLAVE_HEART_BEAT(10007, "slave node heart beat"),
-    SLAVE_REPLICATION_ACK_MSG(10008, "slave node sync master data success"),
-    NODE_REPLICATION_MSG(10009, "slave node replication data"),
-    NODE_REPLICATION_ACK_MSG(10010, "chain replicaiton data success"),
-    PULL_BROKER_IP_LIST(10011, "pull broker ip list");
-
-    private int code;
-    private String desc;
+    int code;
+    String desc;
 
     NameServerEventCode(int code, String desc) {
         this.code = code;

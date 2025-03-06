@@ -2,10 +2,18 @@ package org.tiny.mq.common.utils;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.time.chrono.MinguoDate;
+
 
 public class ReflectUtils {
-    public static Class<?> getInterfaceT(Object o,int index){
+
+
+    /**
+     * 获取接口上的泛型T
+     *
+     * @param o     接口
+     * @param index 泛型索引
+     */
+    public static Class<?> getInterfaceT(Object o, int index) {
         Type[] types = o.getClass().getGenericInterfaces();
         ParameterizedType parameterizedType = (ParameterizedType) types[index];
         Type type = parameterizedType.getActualTypeArguments()[index];

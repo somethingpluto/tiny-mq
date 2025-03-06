@@ -1,17 +1,18 @@
 package org.tiny.mq.common.enums;
 
+
 public enum RegistryTypeEnum {
+
     PRODUCER("producer"),
     CONSUMER("consumer"),
     BROKER("broker");
+    String code;
 
-    String type;
-
-    RegistryTypeEnum(String type) {
-        this.type = type;
+    RegistryTypeEnum(String code) {
+        this.code = code;
     }
 
-    public String getType() {
-        return type;
+    public String getCode() {
+        return code;
     }
 }

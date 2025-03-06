@@ -3,17 +3,18 @@ package org.tiny.mq.nameserver.replication;
 import com.alibaba.fastjson.JSON;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import org.tiny.mq.common.codec.TcpMessage;
+import org.tiny.mq.common.coder.TcpMsg;
 import org.tiny.mq.common.dto.SlaveAckDTO;
-import org.tiny.mq.common.enums.MessageTypeEnum;
+import org.tiny.mq.common.enums.NameServerEventCode;
 import org.tiny.mq.common.enums.NameServerResponseCode;
-import org.tiny.mq.nameserver.config.GlobalConfig;
+import org.tiny.mq.nameserver.common.CommonCache;
+import org.tiny.mq.nameserver.common.MasterSlaveReplicationProperties;
 import org.tiny.mq.nameserver.enums.MasterSlaveReplicationTypeEnum;
-import org.tiny.mq.nameserver.eventbus.event.ReplicationMsgEvent;
-import org.tiny.mq.nameserver.model.MasterSlaveReplicationConfigModel;
+import org.tiny.mq.nameserver.event.model.ReplicationMsgEvent;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+
 
 public class MasterReplicationMsgSendTask extends ReplicationTask {
 
@@ -22,25 +23,29 @@ public class MasterReplicationMsgSendTask extends ReplicationTask {
     }
 
     @Override
-    void startTask() {
-        MasterSlaveReplicationConfigModel masterSlaveReplicationConfig = GlobalConfig.getNameserverConfig().getMasterSlaveReplicationConfigModel();
-        MasterSlaveReplicationTypeEnum replicationTypeEnum = MasterSlaveReplicationTypeEnum.of(masterSlaveReplicationConfig.getType());
+    public void startTask() {
+        MasterSlaveReplicationProperties masterSlaveReplicationProperties = CommonCache.getNameserverProperties().getMasterSlaveReplicationProperties();
+        MasterSlaveReplicationTypeEnum replicationTypeEnum = MasterSlaveReplicationTypeEnum.of(masterSlaveReplicationProperties.getType());
+        //判断当前的复制模式
+        //如果是异步复制，直接发送同步数据，同时返回注册成功信号给到broker节点
+        //如果是同步复制，发送同步数据给到slave节点，slave节点返回ack信号，主节点收到ack信号后通知给broker注册成功
+        //半同步复制其实和同步复制思路很相似
         while (true) {
             try {
-                ReplicationMsgEvent replicationEvent = GlobalConfig.getReplicationMsgQueueManager().getReplicationMsgQueue().take();
-                Channel channel = replicationEvent.getChannelHandlerContext().channel();
-                Map<String, ChannelHandlerContext> validSlaveChannelMap = GlobalConfig.getReplicationChannelManager().getValidSlaveChannelMap();
-                int validSlaveChannelCount = validSlaveChannelMap.keySet().size();
-                if (replicationTypeEnum == MasterSlaveReplicationTypeEnum.ASYNC) { // 异步复制
-                    this.sendMsgToSlave(replicationEvent);
-                    channel.writeAndFlush(MessageTypeEnum.REGISTRY_SUCCESS_MESSAGE);
-                } else if (replicationTypeEnum == MasterSlaveReplicationTypeEnum.SYNC) { // 同步复制
-                    // 需要接收多少个ACK
-                    this.inputMsgToAckMap(replicationEvent, validSlaveChannelCount);
-                    this.sendMsgToSlave(replicationEvent);
-                } else if (replicationTypeEnum == MasterSlaveReplicationTypeEnum.HALF_SYNC) { // 半同步复制，有一般的下游节点得到数据就可以
-                    this.inputMsgToAckMap(replicationEvent, validSlaveChannelCount / 2);
-                    this.sendMsgToSlave(replicationEvent);
+                ReplicationMsgEvent replicationMsgEvent = CommonCache.getReplicationMsgQueueManager().getReplicationMsgQueue().take();
+                Channel brokerChannel = replicationMsgEvent.getChannelHandlerContext().channel();
+                Map<String, ChannelHandlerContext> channelHandlerContextMap = CommonCache.getReplicationChannelManager().getValidSlaveChannelMap();
+                int validSlaveChannelCount = channelHandlerContextMap.keySet().size();
+                if (replicationTypeEnum == MasterSlaveReplicationTypeEnum.ASYNC) {
+                    this.sendMsgToSlave(replicationMsgEvent);
+                    brokerChannel.writeAndFlush(new TcpMsg(NameServerResponseCode.REGISTRY_SUCCESS.getCode(), NameServerResponseCode.REGISTRY_SUCCESS.getDesc().getBytes()));
+                } else if (replicationTypeEnum == MasterSlaveReplicationTypeEnum.SYNC) {
+                    //需要接收到多少个ack的次数
+                    this.inputMsgToAckMap(replicationMsgEvent, validSlaveChannelCount);
+                    this.sendMsgToSlave(replicationMsgEvent);
+                } else if (replicationTypeEnum == MasterSlaveReplicationTypeEnum.HALF_SYNC) {
+                    this.inputMsgToAckMap(replicationMsgEvent, validSlaveChannelCount / 2);
+                    this.sendMsgToSlave(replicationMsgEvent);
                 }
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
@@ -49,28 +54,28 @@ public class MasterReplicationMsgSendTask extends ReplicationTask {
     }
 
     /**
-     * 将需要确认的ACK信息存入map
+     * 将主节点需要发送出去的数据注入到一个map中，然后当从节点返回ack的时候，该map的数据会被剔除对应记录
      *
      * @param replicationMsgEvent
      * @param needAckCount
      */
     private void inputMsgToAckMap(ReplicationMsgEvent replicationMsgEvent, int needAckCount) {
-        GlobalConfig.getSlaveACKMap().put(replicationMsgEvent.getMsgId(), new SlaveAckDTO(new AtomicInteger(needAckCount), replicationMsgEvent.getChannelHandlerContext()));
+        CommonCache.getAckMap().put(replicationMsgEvent.getMsgId(), new SlaveAckDTO(new AtomicInteger(needAckCount), replicationMsgEvent.getChannelHandlerContext()));
     }
 
     /**
-     * 向下游从节点发送消息
+     * 发送数据给到从节点
      *
      * @param replicationMsgEvent
      */
     private void sendMsgToSlave(ReplicationMsgEvent replicationMsgEvent) {
-        // 获取所有的合法下游slave节点channel
-        Map<String, ChannelHandlerContext> channelHandlerContextMap = GlobalConfig.getReplicationChannelManager().getValidSlaveChannelMap();
+        Map<String, ChannelHandlerContext> channelHandlerContextMap = CommonCache.getReplicationChannelManager().getValidSlaveChannelMap();
+        //判断当前采用的同步模式是哪种方式
         for (String reqId : channelHandlerContextMap.keySet()) {
             replicationMsgEvent.setChannelHandlerContext(null);
             byte[] body = JSON.toJSONBytes(replicationMsgEvent);
-            channelHandlerContextMap.get(reqId).writeAndFlush(new TcpMessage(NameServerResponseCode.MASTER_REPLICATION_MSG.getCode(), body));
+            //异步复制，直接发送给从节点，然后告知broker注册成功
+            channelHandlerContextMap.get(reqId).writeAndFlush(new TcpMsg(NameServerEventCode.MASTER_REPLICATION_MSG.getCode(), body));
         }
-
     }
 }
