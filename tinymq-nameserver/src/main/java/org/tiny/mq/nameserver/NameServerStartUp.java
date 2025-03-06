@@ -53,10 +53,6 @@ public class NameServerStartUp {
 
     public static void main(String[] args) throws InterruptedException, IOException {
         CommonCache.getPropertiesLoader().loadProperties();
-        //获取到了集群复制的配置属性
-        //master-slave 复制 ？ trace 复制？
-        //如果是主从复制-》master角色-》开启一个额外的netty进程-》slave链接接入-》当数据写入master的时候，把写入的数据同步给到slave节点
-        //如果是主从复制-》slave角色-》开启一个额外的netty进程-》slave端去链接master节点
         initReplication();
         initInvalidServerRemoveTask();
         nameServerStarter = new NameServerStarter(CommonCache.getNameserverProperties().getNameserverPort());

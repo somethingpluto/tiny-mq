@@ -17,8 +17,8 @@ public class PropertiesLoader {
     private Properties properties = new Properties();
 
     public void loadProperties() throws IOException {
-        String eagleMqHome = System.getenv(BrokerConstants.EAGLE_MQ_HOME);
-        properties.load(new FileInputStream(new File(eagleMqHome + "/config/nameserver.properties")));
+        String tinyMQHome = System.getenv(BrokerConstants.TINY_MQ_HOME);
+        properties.load(new FileInputStream(new File(tinyMQHome + "/config/nameserver.properties")));
         NameserverProperties nameserverProperties = new NameserverProperties();
         nameserverProperties.setNameserverPwd(getStr("nameserver.password"));
         nameserverProperties.setNameserverUser(getStr("nameserver.user"));

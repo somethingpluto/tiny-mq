@@ -18,7 +18,7 @@ public class ConsumeQueueOffsetLoader {
         GlobalProperties globalProperties = CommonCache.getGlobalProperties();
         String basePath = globalProperties.getEagleMqHome();
         if (StringUtil.isNullOrEmpty(basePath)) {
-            throw new IllegalArgumentException("EAGLE_MQ_HOME is invalid!");
+            throw new IllegalArgumentException("TINY_MQ_HOME is invalid!");
         }
         filePath = basePath + "/config/consumequeue-offset.json";
         String fileContent = FileContentUtil.readFromFile(filePath);

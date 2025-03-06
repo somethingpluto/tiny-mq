@@ -1,8 +1,8 @@
 [
 	{
 		"commitLogModel":{
-			"fileName":"00000003",
-			"offset":15215,
+			"fileName":"00000002",
+			"offset":489033,
 			"offsetLimit":1048576
 		},
 		"createAt":1701918231281,
@@ -11,11 +11,25 @@
 				"fileName":"00000000",
 				"id":0,
 				"lastOffset":0,
-				"latestOffset":2231220,
+				"latestOffset":647964,
+				"offsetLimit":6291456
+			},
+			{
+				"fileName":"00000000",
+				"id":1,
+				"lastOffset":0,
+				"latestOffset":647940,
+				"offsetLimit":6291456
+			},
+			{
+				"fileName":"00000000",
+				"id":2,
+				"lastOffset":0,
+				"latestOffset":647592,
 				"offsetLimit":6291456
 			}
 		],
-		"topicName":"user_topic",
+		"topic":"order_cancel_topic",
 		"updateAt":1701918231280
 	}
 ]

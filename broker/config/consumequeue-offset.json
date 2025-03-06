@@ -1,18 +1,23 @@
 {
 	"offsetTable":{
-		"user_topic":{
-			"consumeGroup":{
-				"user_info_consumer":{
-					"0":"00000000#0"
-				},
-				"user_service_group":{
-					"0":"00000000#0"
-				},
-				"order_service_group":{
-					"0":"00000000#0"
-				},
-				"order_info_group":{
-					"0":"00000000#0"
+		"topicConsumerGroupDetail":{
+			"order_cancel_topic":{
+				"consumerGroupDetailMap":{
+					"user_service_group":{
+						"0":"00000000#9792",
+						"1":"00000000#0",
+						"2":"00000000#0"
+					},
+					"order_service_group":{
+						"0":"00000000#9792",
+						"1":"00000000#0",
+						"2":"00000000#0"
+					},
+					"test-consume-group":{
+						"0":"00000000#6516",
+						"1":"00000000#6228",
+						"2":"00000000#6540"
+					}
 				}
 			}
 		}

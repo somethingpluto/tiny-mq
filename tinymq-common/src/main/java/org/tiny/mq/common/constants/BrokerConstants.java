@@ -2,7 +2,7 @@ package org.tiny.mq.common.constants;
 
 public class BrokerConstants {
 
-    public static final String EAGLE_MQ_HOME = "EAGLE_MQ_HOME";
+    public static final String TINY_MQ_HOME = "TINY_MQ_HOME";
     public static final String BASE_COMMIT_PATH = "/commitlog/";
     public static final String BASE_CONSUME_QUEUE_PATH = "/consumequeue/";
     public static final String BROKER_PROPERTIES_PATH = "/config/broker.properties";
