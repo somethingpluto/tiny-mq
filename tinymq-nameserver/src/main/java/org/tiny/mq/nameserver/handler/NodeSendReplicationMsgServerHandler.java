@@ -28,9 +28,15 @@ public class NodeSendReplicationMsgServerHandler extends SimpleChannelInboundHan
         byte[] body = tcpMsg.getBody();
         Event event = null;
         if (NameServerEventCode.NODE_REPLICATION_ACK_MSG.getCode() == code) {
-            event = JSON.parseObject(body, NodeReplicationAckMsgEvent.class);
+            event = handleNodeReplicationAckMsg(body, channelHandlerContext);
         }
-        event.setChannelHandlerContext(channelHandlerContext);
         eventBus.publish(event);
+    }
+
+    private Event handleNodeReplicationAckMsg(byte[] body, ChannelHandlerContext channelHandlerContext) {
+        NodeReplicationAckMsgEvent nodeReplicationAckMsgEvent = JSON.parseObject(body, NodeReplicationAckMsgEvent.class);
+        nodeReplicationAckMsgEvent.setChannelHandlerContext(channelHandlerContext);
+        return nodeReplicationAckMsgEvent;
+
     }
 }

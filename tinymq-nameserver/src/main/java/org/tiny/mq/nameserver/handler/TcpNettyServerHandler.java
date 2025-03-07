@@ -41,36 +41,50 @@ public class TcpNettyServerHandler extends SimpleChannelInboundHandler {
         byte[] body = tcpMsg.getBody();
         Event event = null;
         if (NameServerEventCode.REGISTRY.getCode() == code) {
-            ServiceRegistryReqDTO serviceRegistryReqDTO = JSON.parseObject(body, ServiceRegistryReqDTO.class);
-            RegistryEvent registryEvent = new RegistryEvent();
-            registryEvent.setMsgId(serviceRegistryReqDTO.getMsgId());
-            registryEvent.setPassword(serviceRegistryReqDTO.getPassword());
-            registryEvent.setUser(serviceRegistryReqDTO.getUser());
-            registryEvent.setAttrs(serviceRegistryReqDTO.getAttrs());
-            registryEvent.setRegistryType(serviceRegistryReqDTO.getRegistryType());
-            if (StringUtil.isNullOrEmpty(serviceRegistryReqDTO.getIp())) {
-                InetSocketAddress inetSocketAddress = (InetSocketAddress) channelHandlerContext.channel().remoteAddress();
-                registryEvent.setPort(inetSocketAddress.getPort());
-                registryEvent.setIp(inetSocketAddress.getHostString());
-            } else {
-                registryEvent.setPort(serviceRegistryReqDTO.getPort());
-                registryEvent.setIp(serviceRegistryReqDTO.getIp());
-            }
-            event = registryEvent;
+            event = handleRegistry(body, channelHandlerContext);
         } else if (NameServerEventCode.HEART_BEAT.getCode() == code) {
-            HeartBeatDTO heartBeatDTO = JSON.parseObject(body, HeartBeatDTO.class);
-            HeartBeatEvent heartBeatEvent = new HeartBeatEvent();
-            heartBeatEvent.setMsgId(heartBeatDTO.getMsgId());
-            event = heartBeatEvent;
+            event = handleHeartBeat(body, channelHandlerContext);
         } else if (NameServerEventCode.PULL_BROKER_IP_LIST.getCode() == code) {
-            PullBrokerIpDTO pullBrokerIpDTO = JSON.parseObject(body, PullBrokerIpDTO.class);
-            PullBrokerIpEvent pullBrokerIpEvent = new PullBrokerIpEvent();
-            pullBrokerIpEvent.setRole(pullBrokerIpDTO.getRole());
-            pullBrokerIpEvent.setMsgId(pullBrokerIpDTO.getMsgId());
-            event = pullBrokerIpEvent;
+            event = handlePullBrokerIPList(body, channelHandlerContext);
         }
-        event.setChannelHandlerContext(channelHandlerContext);
         eventBus.publish(event);
+    }
+
+    private Event handleRegistry(byte[] body, ChannelHandlerContext channelHandlerContext) {
+        ServiceRegistryReqDTO serviceRegistryReqDTO = JSON.parseObject(body, ServiceRegistryReqDTO.class);
+        RegistryEvent registryEvent = new RegistryEvent();
+        registryEvent.setMsgId(serviceRegistryReqDTO.getMsgId());
+        registryEvent.setPassword(serviceRegistryReqDTO.getPassword());
+        registryEvent.setUser(serviceRegistryReqDTO.getUser());
+        registryEvent.setAttrs(serviceRegistryReqDTO.getAttrs());
+        registryEvent.setRegistryType(serviceRegistryReqDTO.getRegistryType());
+        registryEvent.setChannelHandlerContext(channelHandlerContext);
+        if (StringUtil.isNullOrEmpty(serviceRegistryReqDTO.getIp())) {
+            InetSocketAddress inetSocketAddress = (InetSocketAddress) channelHandlerContext.channel().remoteAddress();
+            registryEvent.setPort(inetSocketAddress.getPort());
+            registryEvent.setIp(inetSocketAddress.getHostString());
+        } else {
+            registryEvent.setPort(serviceRegistryReqDTO.getPort());
+            registryEvent.setIp(serviceRegistryReqDTO.getIp());
+        }
+        return registryEvent;
+    }
+
+    private Event handleHeartBeat(byte[] body, ChannelHandlerContext channelHandlerContext) {
+        HeartBeatDTO heartBeatDTO = JSON.parseObject(body, HeartBeatDTO.class);
+        HeartBeatEvent heartBeatEvent = new HeartBeatEvent();
+        heartBeatEvent.setMsgId(heartBeatDTO.getMsgId());
+        heartBeatEvent.setChannelHandlerContext(channelHandlerContext);
+        return heartBeatEvent;
+    }
+
+    private Event handlePullBrokerIPList(byte[] body, ChannelHandlerContext channelHandlerContext) {
+        PullBrokerIpDTO pullBrokerIpDTO = JSON.parseObject(body, PullBrokerIpDTO.class);
+        PullBrokerIpEvent pullBrokerIpEvent = new PullBrokerIpEvent();
+        pullBrokerIpEvent.setRole(pullBrokerIpDTO.getRole());
+        pullBrokerIpEvent.setMsgId(pullBrokerIpDTO.getMsgId());
+        pullBrokerIpEvent.setChannelHandlerContext(channelHandlerContext);
+        return pullBrokerIpEvent;
     }
 
     @Override

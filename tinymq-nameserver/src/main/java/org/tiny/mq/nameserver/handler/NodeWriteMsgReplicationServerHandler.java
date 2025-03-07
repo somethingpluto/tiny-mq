@@ -29,10 +29,15 @@ public class NodeWriteMsgReplicationServerHandler extends SimpleChannelInboundHa
         byte[] body = tcpMsg.getBody();
         Event event = null;
         if (NameServerEventCode.NODE_REPLICATION_MSG.getCode() == code) {
-            event = JSON.parseObject(body, NodeReplicationMsgEvent.class);
+            event = handleNodeReplicationMsg(body, channelHandlerContext);
         }
-        event.setChannelHandlerContext(channelHandlerContext);
         CommonCache.setPreNodeChannel(channelHandlerContext.channel());
         eventBus.publish(event);
+    }
+
+    private Event handleNodeReplicationMsg(byte[] body, ChannelHandlerContext channelHandlerContext) {
+        NodeReplicationMsgEvent nodeReplicationMsgEvent = JSON.parseObject(body, NodeReplicationMsgEvent.class);
+        nodeReplicationMsgEvent.setChannelHandlerContext(channelHandlerContext);
+        return nodeReplicationMsgEvent;
     }
 }

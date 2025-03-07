@@ -33,10 +33,15 @@ public class SlaveReplicationServerHandler extends SimpleChannelInboundHandler {
         //从节点发起链接，在master端通过密码验证，建立链接
         Event event = null;
         if (NameServerEventCode.MASTER_REPLICATION_MSG.getCode() == code) {
-            event = JSON.parseObject(body, ReplicationMsgEvent.class);
+            event = handleMasterReplicationMsg(body, channelHandlerContext);
         }
-        event.setChannelHandlerContext(channelHandlerContext);
         eventBus.publish(event);
+    }
+
+    private Event handleMasterReplicationMsg(byte[] body, ChannelHandlerContext channelHandlerContext) {
+        ReplicationMsgEvent replicationMsgEvent = JSON.parseObject(body, ReplicationMsgEvent.class);
+        replicationMsgEvent.setChannelHandlerContext(channelHandlerContext);
+        return replicationMsgEvent;
     }
 
     @Override

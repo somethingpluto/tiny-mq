@@ -28,17 +28,33 @@ public class MasterReplicationServerHandler extends SimpleChannelInboundHandler 
         TcpMsg tcpMsg = (TcpMsg) msg;
         int code = tcpMsg.getCode();
         byte[] body = tcpMsg.getBody();
-        //从节点发起链接，在master端通过密码验证，建立链接
         Event event = null;
         if (NameServerEventCode.START_REPLICATION.getCode() == code) {
-            event = JSON.parseObject(body, StartReplicationEvent.class);
+            event = handleStartReplication(body, channelHandlerContext);
         } else if (NameServerEventCode.SLAVE_HEART_BEAT.getCode() == code) {
-            event = new SlaveHeartBeatEvent();
+            event = handleSlaveHeartBeat(body, channelHandlerContext);
         } else if (NameServerEventCode.SLAVE_REPLICATION_ACK_MSG.getCode() == code) {
-            event = JSON.parseObject(body, SlaveReplicationMsgAckEvent.class);
+            event = handleSlaveReplicationAckMsg(body, channelHandlerContext);
         }
-        event.setChannelHandlerContext(channelHandlerContext);
         eventBus.publish(event);
+    }
+
+    private Event handleStartReplication(byte[] body, ChannelHandlerContext channelHandlerContext) {
+        StartReplicationEvent startReplicationEvent = JSON.parseObject(body, StartReplicationEvent.class);
+        startReplicationEvent.setChannelHandlerContext(channelHandlerContext);
+        return startReplicationEvent;
+    }
+
+    private Event handleSlaveHeartBeat(byte[] body, ChannelHandlerContext channelHandlerContext) {
+        SlaveHeartBeatEvent slaveHeartBeatEvent = new SlaveHeartBeatEvent();
+        slaveHeartBeatEvent.setChannelHandlerContext(channelHandlerContext);
+        return slaveHeartBeatEvent;
+    }
+
+    private Event handleSlaveReplicationAckMsg(byte[] body, ChannelHandlerContext channelHandlerContext) {
+        SlaveReplicationMsgAckEvent slaveReplicationMsgAckEvent = JSON.parseObject(body, SlaveReplicationMsgAckEvent.class);
+        slaveReplicationMsgAckEvent.setChannelHandlerContext(channelHandlerContext);
+        return slaveReplicationMsgAckEvent;
     }
 
     @Override
