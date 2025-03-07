@@ -23,10 +23,6 @@ public class MasterReplicationServerHandler extends SimpleChannelInboundHandler 
         this.eventBus.init();
     }
 
-    //1.网络请求的接收(netty完成)
-    //2.事件发布器的实现（EventBus-》event）Spring的事件，Google Guaua
-    //3.事件处理器的实现（Listener-》处理event）
-    //4.数据存储（基于Map本地内存的方式存储）
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object msg) throws Exception {
         TcpMsg tcpMsg = (TcpMsg) msg;

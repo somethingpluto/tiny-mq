@@ -41,36 +41,48 @@ public class BrokerServerHandler extends SimpleChannelInboundHandler {
         byte[] body = tcpMsg.getBody();
         Event event = null;
         if (BrokerEventCode.PUSH_MSG.getCode() == code) {
-            MessageDTO messageDTO = JSON.parseObject(body, MessageDTO.class);
-            PushMsgEvent pushMsgEvent = new PushMsgEvent();
-            pushMsgEvent.setMessageDTO(messageDTO);
-            logger.info("收到消息推送内容:{},message is {}", new String(messageDTO.getBody()), JSON.toJSONString(messageDTO));
-            event = pushMsgEvent;
+            event = handlePushMsgEvent(body, channelHandlerContext);
         } else if (BrokerEventCode.CONSUME_MSG.getCode() == code) {
-            //这里需要设置一个消费者id
-            ConsumeMsgReqDTO consumeMsgReqDTO = JSON.parseObject(body, ConsumeMsgReqDTO.class);
-            InetSocketAddress inetSocketAddress = (InetSocketAddress) channelHandlerContext.channel().remoteAddress();
-            consumeMsgReqDTO.setIp(inetSocketAddress.getHostString());
-            consumeMsgReqDTO.setPort(inetSocketAddress.getPort());
-            ConsumeMsgEvent consumeMsgEvent = new ConsumeMsgEvent();
-            consumeMsgEvent.setConsumeMsgReqDTO(consumeMsgReqDTO);
-            consumeMsgEvent.setMsgId(consumeMsgReqDTO.getMsgId());
-            channelHandlerContext.attr(AttributeKey.valueOf("consumer-reqId")).set(consumeMsgReqDTO.getIp() + ":" + consumeMsgReqDTO.getPort());
-            event = consumeMsgEvent;
+            event = handleConsumeMsgEvent(body, channelHandlerContext);
         } else if (BrokerEventCode.CONSUME_SUCCESS_MSG.getCode() == code) {
-            ConsumeMsgAckReqDTO consumeMsgAckReqDTO = JSON.parseObject(body, ConsumeMsgAckReqDTO.class);
-            InetSocketAddress inetSocketAddress = (InetSocketAddress) channelHandlerContext.channel().remoteAddress();
-            consumeMsgAckReqDTO.setIp(inetSocketAddress.getHostString());
-            consumeMsgAckReqDTO.setPort(inetSocketAddress.getPort());
-            ConsumeMsgAckEvent consumeMsgAckEvent = new ConsumeMsgAckEvent();
-            consumeMsgAckEvent.setConsumeMsgAckReqDTO(consumeMsgAckReqDTO);
-            consumeMsgAckEvent.setMsgId(consumeMsgAckReqDTO.getMsgId());
-            event = consumeMsgAckEvent;
+            event = handleConsumeSuccessMsg(body, channelHandlerContext);
         }
-        event.setChannelHandlerContext(channelHandlerContext);
         eventBus.publish(event);
     }
 
+    private Event handlePushMsgEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {
+        MessageDTO messageDTO = JSON.parseObject(body, MessageDTO.class);
+        PushMsgEvent pushMsgEvent = new PushMsgEvent();
+        pushMsgEvent.setMessageDTO(messageDTO);
+        pushMsgEvent.setChannelHandlerContext(channelHandlerContext);
+        logger.info("收到消息推送内容:{},message is {}", new String(messageDTO.getBody()), JSON.toJSONString(messageDTO));
+        return pushMsgEvent;
+    }
+
+    private Event handleConsumeMsgEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {
+        ConsumeMsgReqDTO consumeMsgReqDTO = JSON.parseObject(body, ConsumeMsgReqDTO.class);
+        InetSocketAddress inetSocketAddress = (InetSocketAddress) channelHandlerContext.channel().remoteAddress();
+        consumeMsgReqDTO.setIp(inetSocketAddress.getHostString());
+        consumeMsgReqDTO.setPort(inetSocketAddress.getPort());
+        ConsumeMsgEvent consumeMsgEvent = new ConsumeMsgEvent();
+        consumeMsgEvent.setConsumeMsgReqDTO(consumeMsgReqDTO);
+        consumeMsgEvent.setMsgId(consumeMsgReqDTO.getMsgId());
+        consumeMsgEvent.setChannelHandlerContext(channelHandlerContext);
+        channelHandlerContext.attr(AttributeKey.valueOf("consumer-reqId")).set(consumeMsgReqDTO.getIp() + ":" + consumeMsgReqDTO.getPort());
+        return consumeMsgEvent;
+    }
+
+    private Event handleConsumeSuccessMsg(byte[] body, ChannelHandlerContext channelHandlerContext) {
+        ConsumeMsgAckReqDTO consumeMsgAckReqDTO = JSON.parseObject(body, ConsumeMsgAckReqDTO.class);
+        InetSocketAddress inetSocketAddress = (InetSocketAddress) channelHandlerContext.channel().remoteAddress();
+        consumeMsgAckReqDTO.setIp(inetSocketAddress.getHostString());
+        consumeMsgAckReqDTO.setPort(inetSocketAddress.getPort());
+        ConsumeMsgAckEvent consumeMsgAckEvent = new ConsumeMsgAckEvent();
+        consumeMsgAckEvent.setConsumeMsgAckReqDTO(consumeMsgAckReqDTO);
+        consumeMsgAckEvent.setMsgId(consumeMsgAckReqDTO.getMsgId());
+        consumeMsgAckEvent.setChannelHandlerContext(channelHandlerContext);
+        return consumeMsgAckEvent;
+    }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {

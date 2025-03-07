@@ -3,8 +3,8 @@ package org.tiny.mq;
 
 import org.tiny.mq.cache.CommonCache;
 import org.tiny.mq.config.ConsumeQueueOffsetLoader;
-import org.tiny.mq.config.EagleMqTopicLoader;
 import org.tiny.mq.config.GlobalPropertiesLoader;
+import org.tiny.mq.config.TinyMqTopicLoader;
 import org.tiny.mq.core.CommitLogAppendHandler;
 import org.tiny.mq.core.ConsumeQueueAppendHandler;
 import org.tiny.mq.core.ConsumeQueueConsumeHandler;
@@ -17,7 +17,7 @@ import java.io.IOException;
 public class BrokerStartUp {
 
     private static GlobalPropertiesLoader globalPropertiesLoader;
-    private static EagleMqTopicLoader eagleMqTopicLoader;
+    private static TinyMqTopicLoader eagleMqTopicLoader;
     private static CommitLogAppendHandler commitLogAppendHandler;
     private static ConsumeQueueOffsetLoader consumeQueueOffsetLoader;
     private static ConsumeQueueAppendHandler consumeQueueAppendHandler;
@@ -28,7 +28,7 @@ public class BrokerStartUp {
      */
     private static void initProperties() throws IOException {
         globalPropertiesLoader = new GlobalPropertiesLoader();
-        eagleMqTopicLoader = new EagleMqTopicLoader();
+        eagleMqTopicLoader = new TinyMqTopicLoader();
         consumeQueueOffsetLoader = new ConsumeQueueOffsetLoader();
         consumeQueueConsumeHandler = new ConsumeQueueConsumeHandler();
         commitLogAppendHandler = new CommitLogAppendHandler();

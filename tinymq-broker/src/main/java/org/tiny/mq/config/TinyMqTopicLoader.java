@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 
-public class EagleMqTopicLoader {
+public class TinyMqTopicLoader {
 
     private String filePath;
 

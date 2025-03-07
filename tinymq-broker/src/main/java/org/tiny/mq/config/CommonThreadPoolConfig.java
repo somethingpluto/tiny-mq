@@ -12,7 +12,7 @@ public class CommonThreadPoolConfig {
             1,
             30, TimeUnit.SECONDS, new ArrayBlockingQueue<>(10), r -> {
         Thread thread = new Thread(r);
-        thread.setName("refresh-eagle-mq-topic-config");
+        thread.setName("refresh-tiny-mq-topic-config");
         return thread;
     });
 
@@ -22,7 +22,7 @@ public class CommonThreadPoolConfig {
             1,
             30, TimeUnit.SECONDS, new ArrayBlockingQueue<>(10), r -> {
         Thread thread = new Thread(r);
-        thread.setName("refresh-eagle-mq-topic-config");
+        thread.setName("refresh-tiny-mq-topic-config");
         return thread;
     });
 }
