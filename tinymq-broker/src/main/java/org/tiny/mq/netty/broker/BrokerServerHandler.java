@@ -11,11 +11,13 @@ import org.tiny.mq.cache.CommonCache;
 import org.tiny.mq.common.coder.TcpMsg;
 import org.tiny.mq.common.dto.ConsumeMsgAckReqDTO;
 import org.tiny.mq.common.dto.ConsumeMsgReqDTO;
+import org.tiny.mq.common.dto.CreateTopicReqDTO;
 import org.tiny.mq.common.dto.MessageDTO;
 import org.tiny.mq.common.enums.BrokerEventCode;
 import org.tiny.mq.common.event.EventBus;
 import org.tiny.mq.common.event.model.Event;
 import org.tiny.mq.event.model.ConsumeMsgEvent;
+import org.tiny.mq.event.model.CreateTopicEvent;
 import org.tiny.mq.event.model.PushMsgEvent;
 import org.tiny.mq.model.ConsumeMsgAckEvent;
 
@@ -46,8 +48,18 @@ public class BrokerServerHandler extends SimpleChannelInboundHandler {
             event = handleConsumeMsgEvent(body, channelHandlerContext);
         } else if (BrokerEventCode.CONSUME_SUCCESS_MSG.getCode() == code) {
             event = handleConsumeSuccessMsg(body, channelHandlerContext);
+        } else if (BrokerEventCode.CREATE_TOPIC.getCode() == code) {
+            event = handleCreateTopicEvent(body, channelHandlerContext);
         }
         eventBus.publish(event);
+    }
+
+    private Event handleCreateTopicEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {
+        CreateTopicReqDTO createTopicReqDTO = JSON.parseObject(body, CreateTopicReqDTO.class);
+        CreateTopicEvent createTopicEvent = new CreateTopicEvent();
+        createTopicEvent.setCreateTopicReqDTO(createTopicReqDTO);
+        createTopicEvent.setChannelHandlerContext(channelHandlerContext);
+        return createTopicEvent;
     }
 
     private Event handlePushMsgEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {

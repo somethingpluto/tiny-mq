@@ -46,6 +46,7 @@ public class BrokerStartUp {
         }
         CommonCache.setConsumeQueueConsumeHandler(consumeQueueConsumeHandler);
         CommonCache.setCommitLogAppendHandler(commitLogAppendHandler);
+        CommonCache.setConsumeQueueAppendHandler(consumeQueueAppendHandler);
     }
 
     /**

@@ -2,10 +2,7 @@ package org.tiny.mq.cache;
 
 
 import org.tiny.mq.config.GlobalProperties;
-import org.tiny.mq.core.CommitLogAppendHandler;
-import org.tiny.mq.core.CommitLogMMapFileModelManager;
-import org.tiny.mq.core.ConsumeQueueConsumeHandler;
-import org.tiny.mq.core.ConsumeQueueMMapFileModelManager;
+import org.tiny.mq.core.*;
 import org.tiny.mq.model.ConsumeQueueOffsetModel;
 import org.tiny.mq.model.EagleMqTopicModel;
 import org.tiny.mq.netty.nameserver.HeartBeatTaskManager;
@@ -36,6 +33,16 @@ public class CommonCache {
 
     public static ConsumeQueueConsumeHandler getConsumeQueueConsumeHandler() {
         return consumeQueueConsumeHandler;
+    }
+
+    public static ConsumeQueueAppendHandler consumeQueueAppendHandler;
+
+    public static ConsumeQueueAppendHandler getConsumeQueueAppendHandler() {
+        return consumeQueueAppendHandler;
+    }
+
+    public static void setConsumeQueueAppendHandler(ConsumeQueueAppendHandler consumeQueueAppendHandler) {
+        CommonCache.consumeQueueAppendHandler = consumeQueueAppendHandler;
     }
 
     public static void setConsumeQueueConsumeHandler(ConsumeQueueConsumeHandler consumeQueueConsumeHandler) {

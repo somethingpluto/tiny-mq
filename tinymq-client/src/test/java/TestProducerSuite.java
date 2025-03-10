@@ -4,6 +4,8 @@ import org.tiny.mq.common.dto.MessageDTO;
 import org.tiny.mq.producer.DefaultProducerImpl;
 import org.tiny.mq.producer.SendResult;
 
+import java.util.concurrent.TimeUnit;
+
 public class TestProducerSuite {
 
     private DefaultProducerImpl producer;
@@ -22,6 +24,7 @@ public class TestProducerSuite {
     public void sendMsg() throws InterruptedException {
         long i = 1;
         while (true) {
+            TimeUnit.MILLISECONDS.sleep(500);
             MessageDTO messageDTO = new MessageDTO();
             messageDTO.setTopic("order_cancel_topic");
             messageDTO.setBody(("mq content-" + i).getBytes());

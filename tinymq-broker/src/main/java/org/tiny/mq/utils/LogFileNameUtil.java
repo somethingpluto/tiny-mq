@@ -15,6 +15,10 @@ public class LogFileNameUtil {
         return "00000000";
     }
 
+    public static String buildFirstConsumeQueue() {
+        return "00000000";
+    }
+
 
     /**
      * 构建commitLog文件路径
@@ -24,11 +28,11 @@ public class LogFileNameUtil {
      * @return
      */
     public static String buildCommitLogFilePath(String topicName, String commitLogFileName) {
-        return CommonCache.getGlobalProperties().getEagleMqHome()
-                + BrokerConstants.BASE_COMMIT_PATH
-                + topicName
-                + BrokerConstants.SPLIT
-                + commitLogFileName;
+        return CommonCache.getGlobalProperties().getEagleMqHome() + BrokerConstants.BASE_COMMIT_PATH + topicName + BrokerConstants.SPLIT + commitLogFileName;
+    }
+
+    public static String buildCommitLogBasePath(String topicName) {
+        return CommonCache.getGlobalProperties().getEagleMqHome() + BrokerConstants.BASE_COMMIT_PATH + topicName;
     }
 
     /**
@@ -40,13 +44,12 @@ public class LogFileNameUtil {
      * @return
      */
     public static String buildConsumeQueueFilePath(String topicName, Integer queueId, String consumeQueueFileName) {
-        return CommonCache.getGlobalProperties().getEagleMqHome()
-                + BrokerConstants.BASE_CONSUME_QUEUE_PATH
-                + topicName
-                + BrokerConstants.SPLIT
-                + queueId
-                + BrokerConstants.SPLIT
-                + consumeQueueFileName;
+        return CommonCache.getGlobalProperties().getEagleMqHome() + BrokerConstants.BASE_CONSUME_QUEUE_PATH + topicName + BrokerConstants.SPLIT + queueId + BrokerConstants.SPLIT + consumeQueueFileName;
+    }
+
+    public static String buildConsumeQueueuBasePath(String topicName) {
+        return CommonCache.getGlobalProperties().getEagleMqHome() + BrokerConstants.BASE_CONSUME_QUEUE_PATH + topicName;
+
     }
 
 
