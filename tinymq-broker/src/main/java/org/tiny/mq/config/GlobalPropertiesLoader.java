@@ -27,6 +27,9 @@ public class GlobalPropertiesLoader {
             globalProperties.setBrokerPort(Integer.valueOf(properties.getProperty("broker.port")));
             globalProperties.setNameserverPassword(properties.getProperty("nameserver.password"));
             globalProperties.setReBalanceStrategy(properties.getProperty("rebalance.strategy"));
+            globalProperties.setBrokerClusterMode(properties.getProperty("broker.cluster.mode"));
+            globalProperties.setBrokerClusterRole(properties.getProperty("broker.cluster.role"));
+            globalProperties.setBrokerClusterGroup(properties.getProperty("broker.cluster.group"));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

@@ -9,16 +9,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tiny.mq.cache.CommonCache;
 import org.tiny.mq.common.coder.TcpMsg;
-import org.tiny.mq.common.dto.ConsumeMsgAckReqDTO;
-import org.tiny.mq.common.dto.ConsumeMsgReqDTO;
-import org.tiny.mq.common.dto.CreateTopicReqDTO;
-import org.tiny.mq.common.dto.MessageDTO;
+import org.tiny.mq.common.dto.*;
 import org.tiny.mq.common.enums.BrokerEventCode;
 import org.tiny.mq.common.event.EventBus;
 import org.tiny.mq.common.event.model.Event;
 import org.tiny.mq.event.model.ConsumeMsgEvent;
 import org.tiny.mq.event.model.CreateTopicEvent;
 import org.tiny.mq.event.model.PushMsgEvent;
+import org.tiny.mq.event.model.StartSyncEvent;
 import org.tiny.mq.model.ConsumeMsgAckEvent;
 
 import java.net.InetSocketAddress;
@@ -50,8 +48,18 @@ public class BrokerServerHandler extends SimpleChannelInboundHandler {
             event = handleConsumeSuccessMsg(body, channelHandlerContext);
         } else if (BrokerEventCode.CREATE_TOPIC.getCode() == code) {
             event = handleCreateTopicEvent(body, channelHandlerContext);
+        } else if (BrokerEventCode.START_SYNC_MSG.getCode() == code) {
+            event = handleStartSyncMsgEvent(body, channelHandlerContext);
         }
         eventBus.publish(event);
+    }
+
+    private Event handleStartSyncMsgEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {
+        StartSyncReqDTO startSyncReqDTO = JSON.parseObject(body, StartSyncReqDTO.class);
+        StartSyncEvent startSyncEvent = new StartSyncEvent();
+        startSyncEvent.setMsgId(startSyncReqDTO.getMsgId());
+        startSyncEvent.setChannelHandlerContext(channelHandlerContext);
+        return startSyncEvent;
     }
 
     private Event handleCreateTopicEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {

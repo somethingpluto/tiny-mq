@@ -40,8 +40,8 @@ public class CreateTopicListener implements Listener<CreateTopicEvent> {
         }
         createTopicFile(topicName);
         createTopicQueue(topicName, queueSize);
-        loadFileToMMap(topicName);
         addToCommonCache(topicName, queueSize);
+        loadFileToMMap(topicName);
         logger.info("topic:{} create success", topicName);
     }
 

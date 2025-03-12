@@ -35,6 +35,8 @@ public class DefaultMqConsumer {
     private String brokerRole = "single";
     private Integer queueId;
     private Integer batchSize;
+
+    private String brokerClusterGroup;
     private NameServerNettyRemoteClient nameServerNettyRemoteClient;
     private List<String> brokerAddressList;
     private MessageConsumeListener messageConsumeListener;
@@ -191,18 +193,32 @@ public class DefaultMqConsumer {
 
     /**
      * 拉broker地址
+     * <p>
+     * 主从架构下 从节点拉取数据 主节点拉去数据
      */
     public void fetchBrokerAddress() {
         String fetchBrokerAddressMsgId = UUID.randomUUID().toString();
         PullBrokerIpDTO pullBrokerIpDTO = new PullBrokerIpDTO();
-        pullBrokerIpDTO.setRole(brokerRole);
+        if (getBrokerClusterGroup() != null) {
+            pullBrokerIpDTO.setBrokerClusterGroup(brokerClusterGroup);
+        } else {
+            pullBrokerIpDTO.setRole(brokerRole);
+        }
         pullBrokerIpDTO.setMsgId(fetchBrokerAddressMsgId);
-        TcpMsg heartBeatResponse = nameServerNettyRemoteClient.sendSyncMsg(new TcpMsg(NameServerEventCode.PULL_BROKER_IP_LIST.getCode(),
-                JSON.toJSONBytes(pullBrokerIpDTO)), fetchBrokerAddressMsgId);
+        TcpMsg heartBeatResponse = nameServerNettyRemoteClient.sendSyncMsg(new TcpMsg(NameServerEventCode.PULL_BROKER_IP_LIST.getCode(), JSON.toJSONBytes(pullBrokerIpDTO)), fetchBrokerAddressMsgId);
         //获取broker节点ip地址，并且缓存起来，可能由多个master-broker角色
         PullBrokerIpRespDTO pullBrokerIpRespDTO = JSON.parseObject(heartBeatResponse.getBody(), PullBrokerIpRespDTO.class);
         this.setBrokerAddressList(pullBrokerIpRespDTO.getAddressList());
         logger.info("fetch broker address:{}", this.getBrokerAddressList());
+    }
+
+
+    public String getBrokerClusterGroup() {
+        return brokerClusterGroup;
+    }
+
+    public void setBrokerClusterGroup(String brokerClusterGroup) {
+        this.brokerClusterGroup = brokerClusterGroup;
     }
 
     public String getBrokerRole() {

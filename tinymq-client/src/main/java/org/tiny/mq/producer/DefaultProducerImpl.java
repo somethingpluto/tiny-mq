@@ -29,9 +29,19 @@ public class DefaultProducerImpl implements Producer {
     private Integer nsPort;
     private String nsUser;
     private String nsPwd;
+    private String brokerClusterGroup;
+
     private List<String> brokerAddressList; //broker地址会有多个？broker节点会有多个，水平扩展的效果，水平扩展（存储内容会增加，承载压力也会大大增加，节点的选择问题）
     private NameServerNettyRemoteClient nameServerNettyRemoteClient;
     private Map<String, BrokerNettyRemoteClient> brokerNettyRemoteClientMap = new ConcurrentHashMap<>();
+
+    public String getBrokerClusterGroup() {
+        return brokerClusterGroup;
+    }
+
+    public void setBrokerClusterGroup(String brokerClusterGroup) {
+        this.brokerClusterGroup = brokerClusterGroup;
+    }
 
     public String getNsIp() {
         return nsIp;
@@ -141,7 +151,11 @@ public class DefaultProducerImpl implements Producer {
     public void fetchBrokerAddress() {
         String fetchBrokerAddressMsgId = UUID.randomUUID().toString();
         PullBrokerIpDTO pullBrokerIpDTO = new PullBrokerIpDTO();
-        pullBrokerIpDTO.setRole("single");
+        if (getBrokerClusterGroup() != null) {
+            pullBrokerIpDTO.setRole(BrokerRegistryEnum.MASTER.getDesc());
+        } else {
+            pullBrokerIpDTO.setRole(BrokerRegistryEnum.SINGLE.getDesc());
+        }
         pullBrokerIpDTO.setMsgId(fetchBrokerAddressMsgId);
         TcpMsg heartBeatResponse = nameServerNettyRemoteClient.sendSyncMsg(new TcpMsg(NameServerEventCode.PULL_BROKER_IP_LIST.getCode(),
                 JSON.toJSONBytes(pullBrokerIpDTO)), fetchBrokerAddressMsgId);

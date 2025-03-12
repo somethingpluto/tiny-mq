@@ -17,6 +17,7 @@ public class TestProducerSuite {
         producer.setNsPort(9093);
         producer.setNsPwd("tiny_mq");
         producer.setNsUser("tiny_mq");
+        producer.setBrokerClusterGroup("tiny_mq_test_group");
         producer.start();
     }
 
@@ -34,5 +35,9 @@ public class TestProducerSuite {
         }
     }
 
+    @Test
+    public void pullMasterBroker() {
+        System.out.println("pull master");
+    }
 
 }

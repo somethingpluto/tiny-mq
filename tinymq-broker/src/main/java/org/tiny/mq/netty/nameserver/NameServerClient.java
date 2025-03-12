@@ -2,33 +2,26 @@ package org.tiny.mq.netty.nameserver;
 
 import com.alibaba.fastjson.JSON;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import io.netty.util.internal.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tiny.mq.cache.CommonCache;
 import org.tiny.mq.common.coder.TcpMsg;
-import org.tiny.mq.common.coder.TcpMsgDecoder;
-import org.tiny.mq.common.coder.TcpMsgEncoder;
-import org.tiny.mq.common.constants.TcpConstants;
+import org.tiny.mq.common.dto.PullBrokerIpDTO;
+import org.tiny.mq.common.dto.PullBrokerIpRespDTO;
 import org.tiny.mq.common.dto.ServiceRegistryReqDTO;
-import org.tiny.mq.common.enums.NameServerEventCode;
-import org.tiny.mq.common.enums.RegistryTypeEnum;
+import org.tiny.mq.common.enums.*;
+import org.tiny.mq.common.remote.NameServerNettyRemoteClient;
 import org.tiny.mq.config.GlobalProperties;
 
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 public class NameServerClient {
 
@@ -39,6 +32,12 @@ public class NameServerClient {
     private Channel channel;
     private String DEFAULT_NAMESERVER_IP = "127.0.0.1";
 
+    private NameServerNettyRemoteClient nameServerNettyRemoteClient;
+
+    public NameServerNettyRemoteClient getNameServerNettyRemoteClient() {
+        return nameServerNettyRemoteClient;
+    }
+
     /**
      * 初始化链接
      */
@@ -48,60 +47,76 @@ public class NameServerClient {
         if (StringUtil.isNullOrEmpty(ip) || port == null || port < 0) {
             throw new RuntimeException("error port or ip");
         }
-        bootstrap.group(clientGroup);
-        bootstrap.channel(NioSocketChannel.class);
-        bootstrap.handler(new ChannelInitializer<SocketChannel>() {
-            @Override
-            protected void initChannel(SocketChannel ch) throws Exception {
-                ByteBuf delimiter = Unpooled.copiedBuffer(TcpConstants.DEFAULT_DECODE_CHAR.getBytes());
-                ch.pipeline().addLast(new DelimiterBasedFrameDecoder(1024 * 8, delimiter));
-                ch.pipeline().addLast(new TcpMsgDecoder());
-                ch.pipeline().addLast(new TcpMsgEncoder());
-                ch.pipeline().addLast(new NameServerRespChannelHandler());
-            }
-        });
-        ChannelFuture channelFuture = null;
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            clientGroup.shutdownGracefully();
-            logger.info("nameserver client is closed");
-        }));
-        try {
-            channelFuture = bootstrap.connect(ip, port).sync();
-            channel = channelFuture.channel();
-            logger.info("success connected to nameserver!");
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        nameServerNettyRemoteClient = new NameServerNettyRemoteClient(ip, port);
+        nameServerNettyRemoteClient.buildConnection();
     }
 
-    public Channel getChannel() {
-        if (channel == null) {
-            throw new RuntimeException("channel has not been connected!");
-        }
-        return channel;
-    }
 
+    /**
+     * 发送节点注册消息
+     */
     public void sendRegistryMsg() {
         ServiceRegistryReqDTO registryDTO = new ServiceRegistryReqDTO();
         try {
             Map<String, Object> attrs = new HashMap<>();
-            //todo 先写死
-            attrs.put("role", "single");
-            //broker是主从架构,producer（主发送数据）,consumer(主，从拉数据)
-            registryDTO.setIp(Inet4Address.getLocalHost().getHostAddress());
             GlobalProperties globalProperties = CommonCache.getGlobalProperties();
+            String clusterMode = globalProperties.getBrokerClusterMode();
+            if (StringUtil.isNullOrEmpty(clusterMode)) {
+                attrs.put("role", "single");
+            } else if (BrokerClusterModeEnum.MASTER_SLAVE.getDesc().equals(clusterMode)) {
+                //注册模式是集群架构
+                BrokerRegistryEnum brokerRegistryEnum = BrokerRegistryEnum.of(globalProperties.getBrokerClusterRole());
+                attrs.put("role", brokerRegistryEnum.getDesc());
+                attrs.put("group", globalProperties.getBrokerClusterGroup());
+            }
+            //broker是主从架构,producer（主发送数据）,consumer(主，从拉数据)Ï
+            registryDTO.setIp(Inet4Address.getLocalHost().getHostAddress());
             registryDTO.setPort(globalProperties.getBrokerPort());
             registryDTO.setUser(globalProperties.getNameserverUser());
             registryDTO.setPassword(globalProperties.getNameserverPassword());
             registryDTO.setRegistryType(RegistryTypeEnum.BROKER.getCode());
             registryDTO.setAttrs(attrs);
+            registryDTO.setMsgId(UUID.randomUUID().toString());
             byte[] body = JSON.toJSONBytes(registryDTO);
+
+            //发送注册数据给nameserver
             TcpMsg tcpMsg = new TcpMsg(NameServerEventCode.REGISTRY.getCode(), body);
-            channel.writeAndFlush(tcpMsg);
-            logger.info("发送注册事件");
+            TcpMsg registryResponseMsg = nameServerNettyRemoteClient.sendSyncMsg(tcpMsg, registryDTO.getMsgId());
+            if (NameServerResponseCode.REGISTRY_SUCCESS.getCode() == registryResponseMsg.getCode()) {
+                //注册成功！
+                //开启一个定时任务，上报心跳数据给到nameserver
+                logger.info("注册成功，开启心跳任务");
+                CommonCache.getHeartBeatTaskManager().startTask();
+            } else if (NameServerResponseCode.ERROR_USER_OR_PASSWORD.getCode() == registryResponseMsg.getCode()) {
+                //验证失败，抛出异常
+                throw new RuntimeException("error nameserver user or password");
+            } else if (NameServerResponseCode.HEART_BEAT_SUCCESS.getCode() == registryResponseMsg.getCode()) {
+                logger.info("收到nameserver心跳回应ack");
+            }
+            logger.info("registry resp is:{}", JSON.toJSONString(registryResponseMsg.getBody()));
         } catch (UnknownHostException e) {
             throw new RuntimeException(e);
         }
 
+    }
+
+    /**
+     * 获取brokerCluster集群中的master节点ip
+     * p
+     */
+    public String queryBrokerClusterMaster() {
+        String clusterMode = CommonCache.getGlobalProperties().getBrokerClusterMode();
+        if (!BrokerClusterModeEnum.MASTER_SLAVE.getDesc().equals(clusterMode)) {
+            return null;
+        }
+        PullBrokerIpDTO pullBrokerIpDTO = new PullBrokerIpDTO();
+        String msgId = UUID.randomUUID().toString();
+        pullBrokerIpDTO.setMsgId(msgId);
+        pullBrokerIpDTO.setBrokerClusterGroup(CommonCache.getGlobalProperties().getBrokerClusterGroup());
+        pullBrokerIpDTO.setRole(BrokerRegistryEnum.MASTER.name());
+        TcpMsg tcpMsg = new TcpMsg(NameServerEventCode.PULL_BROKER_IP_LIST.getCode(), JSON.toJSONBytes(pullBrokerIpDTO));
+        TcpMsg pullBrokerIpResponse = nameServerNettyRemoteClient.sendSyncMsg(tcpMsg, pullBrokerIpDTO.getMsgId());
+        PullBrokerIpRespDTO pullBrokerIpRespDTO = JSON.parseObject(pullBrokerIpResponse.getBody(), PullBrokerIpRespDTO.class);
+        return pullBrokerIpRespDTO.getMasterList().get(0);
     }
 }

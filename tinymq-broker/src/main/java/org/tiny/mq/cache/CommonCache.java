@@ -1,6 +1,7 @@
 package org.tiny.mq.cache;
 
 
+import io.netty.channel.ChannelHandlerContext;
 import org.tiny.mq.config.GlobalProperties;
 import org.tiny.mq.core.*;
 import org.tiny.mq.model.ConsumeQueueOffsetModel;
@@ -11,6 +12,7 @@ import org.tiny.mq.rebalance.ConsumerInstance;
 import org.tiny.mq.rebalance.ConsumerInstancePool;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,6 +32,20 @@ public class CommonCache {
     private static Map<String, Map<String, List<ConsumerInstance>>> consumeHoldMap = new ConcurrentHashMap<>();
     private static ConsumerInstancePool consumerInstancePool = new ConsumerInstancePool();
     private static ConsumeQueueConsumeHandler consumeQueueConsumeHandler;
+
+    private static Map<String, ChannelHandlerContext> slaveChannelMap = new HashMap<>();
+
+    public static void setConsumerInstancePool(ConsumerInstancePool consumerInstancePool) {
+        CommonCache.consumerInstancePool = consumerInstancePool;
+    }
+
+    public static Map<String, ChannelHandlerContext> getSlaveChannelMap() {
+        return slaveChannelMap;
+    }
+
+    public static void setSlaveChannelMap(Map<String, ChannelHandlerContext> slaveChannelMap) {
+        CommonCache.slaveChannelMap = slaveChannelMap;
+    }
 
     public static ConsumeQueueConsumeHandler getConsumeQueueConsumeHandler() {
         return consumeQueueConsumeHandler;

@@ -2,6 +2,7 @@ package org.tiny.mq;
 
 
 import org.tiny.mq.cache.CommonCache;
+import org.tiny.mq.common.enums.BrokerClusterModeEnum;
 import org.tiny.mq.config.ConsumeQueueOffsetLoader;
 import org.tiny.mq.config.GlobalPropertiesLoader;
 import org.tiny.mq.config.TinyMqTopicLoader;
@@ -10,6 +11,7 @@ import org.tiny.mq.core.ConsumeQueueAppendHandler;
 import org.tiny.mq.core.ConsumeQueueConsumeHandler;
 import org.tiny.mq.model.EagleMqTopicModel;
 import org.tiny.mq.netty.broker.BrokerServer;
+import org.tiny.mq.slave.SlaveSyncService;
 
 import java.io.IOException;
 
@@ -55,6 +57,13 @@ public class BrokerStartUp {
     private static void initNameServerChannel() {
         CommonCache.getNameServerClient().initConnection();
         CommonCache.getNameServerClient().sendRegistryMsg();
+        if (!BrokerClusterModeEnum.MASTER_SLAVE.getDesc().equals(CommonCache.getGlobalProperties().getBrokerClusterMode()) || "master".equals(CommonCache.getGlobalProperties().getBrokerClusterRole())) {
+            return;
+        }
+        String address = CommonCache.getNameServerClient().queryBrokerClusterMaster();
+        SlaveSyncService slaveSyncService = new SlaveSyncService();
+        slaveSyncService.connectToMasterBrokerNode(address);
+        slaveSyncService.sendStartSyncMsg();
     }
 
     //开启重平衡任务

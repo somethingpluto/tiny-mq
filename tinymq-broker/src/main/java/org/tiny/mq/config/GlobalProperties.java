@@ -16,6 +16,34 @@ public class GlobalProperties {
      * 读取环境变量中配置的mq存储绝对路径地址
      */
     private String eagleMqHome;
+    // 集群配置相关
+    private String brokerClusterMode;
+    private String brokerClusterRole;
+    private String brokerClusterGroup;
+
+    public String getBrokerClusterMode() {
+        return brokerClusterMode;
+    }
+
+    public void setBrokerClusterMode(String brokerClusterMode) {
+        this.brokerClusterMode = brokerClusterMode;
+    }
+
+    public String getBrokerClusterRole() {
+        return brokerClusterRole;
+    }
+
+    public void setBrokerClusterRole(String brokerClusterRole) {
+        this.brokerClusterRole = brokerClusterRole;
+    }
+
+    public String getBrokerClusterGroup() {
+        return brokerClusterGroup;
+    }
+
+    public void setBrokerClusterGroup(String brokerClusterGroup) {
+        this.brokerClusterGroup = brokerClusterGroup;
+    }
 
     public String getEagleMqHome() {
         return eagleMqHome;
