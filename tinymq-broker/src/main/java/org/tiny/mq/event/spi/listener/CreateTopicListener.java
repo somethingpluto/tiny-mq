@@ -1,11 +1,16 @@
 package org.tiny.mq.event.spi.listener;
 
+import com.alibaba.fastjson.JSON;
+import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tiny.mq.cache.CommonCache;
 import org.tiny.mq.common.coder.TcpMsg;
 import org.tiny.mq.common.constants.BrokerConstants;
 import org.tiny.mq.common.dto.CreateTopicReqDTO;
+import org.tiny.mq.common.enums.BrokerClusterModeEnum;
+import org.tiny.mq.common.enums.BrokerEventCode;
+import org.tiny.mq.common.enums.BrokerRegistryEnum;
 import org.tiny.mq.common.enums.BrokerResponseCode;
 import org.tiny.mq.common.event.Listener;
 import org.tiny.mq.event.model.CreateTopicEvent;
@@ -43,6 +48,15 @@ public class CreateTopicListener implements Listener<CreateTopicEvent> {
         addToCommonCache(topicName, queueSize);
         loadFileToMMap(topicName);
         logger.info("topic:{} create success", topicName);
+        // 检测是否是主节点 主节点需要将该操作同步给从节点
+        if (CommonCache.getGlobalProperties().getBrokerClusterMode().equals(BrokerClusterModeEnum.MASTER_SLAVE.getDesc()) && CommonCache.getGlobalProperties().getBrokerClusterRole().equals(BrokerRegistryEnum.MASTER.getDesc())) {
+            logger.info("master sync create topic to slave node");
+            for (ChannelHandlerContext slaveChannel : CommonCache.getSlaveChannelMap().values()) {
+                TcpMsg tcpMsg = new TcpMsg(BrokerEventCode.CREATE_TOPIC.getCode(), JSON.toJSONBytes(createTopicReqDTO));
+                slaveChannel.writeAndFlush(tcpMsg);
+            }
+
+        }
     }
 
     private static void createTopicFile(String topicName) throws IOException {

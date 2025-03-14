@@ -113,7 +113,7 @@ public class NameServerClient {
         String msgId = UUID.randomUUID().toString();
         pullBrokerIpDTO.setMsgId(msgId);
         pullBrokerIpDTO.setBrokerClusterGroup(CommonCache.getGlobalProperties().getBrokerClusterGroup());
-        pullBrokerIpDTO.setRole(BrokerRegistryEnum.MASTER.name());
+        pullBrokerIpDTO.setRole(BrokerRegistryEnum.MASTER.getDesc());
         TcpMsg tcpMsg = new TcpMsg(NameServerEventCode.PULL_BROKER_IP_LIST.getCode(), JSON.toJSONBytes(pullBrokerIpDTO));
         TcpMsg pullBrokerIpResponse = nameServerNettyRemoteClient.sendSyncMsg(tcpMsg, pullBrokerIpDTO.getMsgId());
         PullBrokerIpRespDTO pullBrokerIpRespDTO = JSON.parseObject(pullBrokerIpResponse.getBody(), PullBrokerIpRespDTO.class);

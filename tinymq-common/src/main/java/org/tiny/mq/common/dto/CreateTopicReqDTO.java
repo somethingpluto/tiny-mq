@@ -3,7 +3,7 @@ package org.tiny.mq.common.dto;
 /**
  * 创建Topic
  */
-public class CreateTopicReqDTO {
+public class CreateTopicReqDTO extends BaseBrokerRemoteDTO {
     private String topicName;
     private Integer queueSize;
 

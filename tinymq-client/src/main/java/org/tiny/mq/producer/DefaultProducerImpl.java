@@ -7,9 +7,11 @@ import org.tiny.mq.common.coder.TcpMsg;
 import org.tiny.mq.common.dto.*;
 import org.tiny.mq.common.enums.*;
 import org.tiny.mq.common.remote.BrokerNettyRemoteClient;
+import org.tiny.mq.common.remote.BrokerRemoteRespHandler;
 import org.tiny.mq.common.remote.NameServerNettyRemoteClient;
 import org.tiny.mq.common.utils.AssertUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -30,8 +32,9 @@ public class DefaultProducerImpl implements Producer {
     private String nsUser;
     private String nsPwd;
     private String brokerClusterGroup;
-
+    private String brokerRole = "single";
     private List<String> brokerAddressList; //broker地址会有多个？broker节点会有多个，水平扩展的效果，水平扩展（存储内容会增加，承载压力也会大大增加，节点的选择问题）
+    private List<String> masterAddressList;
     private NameServerNettyRemoteClient nameServerNettyRemoteClient;
     private Map<String, BrokerNettyRemoteClient> brokerNettyRemoteClientMap = new ConcurrentHashMap<>();
 
@@ -98,9 +101,27 @@ public class DefaultProducerImpl implements Producer {
         if (isRegistrySuccess) {
             this.startHeartBeatTask();
             this.fetchBrokerAddress();
-            //连接到broker节点上
-            this.connectBroker();
+            this.startRefreshBrokerAddressJob();
         }
+    }
+
+
+    public void startRefreshBrokerAddressJob() {
+        Thread refreshBrokerAddressJob = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                        TimeUnit.SECONDS.sleep(3);
+                        fetchBrokerAddress();
+                    } catch (Exception e) {
+                        logger.error("refresh broker address job error:", e);
+                    }
+                }
+            }
+        });
+        refreshBrokerAddressJob.setName("refresh-broker-address-job");
+        refreshBrokerAddressJob.start();
     }
 
     /**
@@ -136,8 +157,7 @@ public class DefaultProducerImpl implements Producer {
                         String heartBeatMsgId = UUID.randomUUID().toString();
                         HeartBeatDTO heartBeatDTO = new HeartBeatDTO();
                         heartBeatDTO.setMsgId(heartBeatMsgId);
-                        TcpMsg heartBeatResponse = nameServerNettyRemoteClient.sendSyncMsg(new TcpMsg(NameServerEventCode.HEART_BEAT.getCode(),
-                                JSON.toJSONBytes(heartBeatDTO)), heartBeatMsgId);
+                        TcpMsg heartBeatResponse = nameServerNettyRemoteClient.sendSyncMsg(new TcpMsg(NameServerEventCode.HEART_BEAT.getCode(), JSON.toJSONBytes(heartBeatDTO)), heartBeatMsgId);
                         logger.info("heart beat response data is :{}", JSON.parseObject(heartBeatResponse.getBody()));
                     } catch (InterruptedException e) {
                         e.printStackTrace();
@@ -148,35 +168,74 @@ public class DefaultProducerImpl implements Producer {
         heartBeatTask.start();
     }
 
+    /**
+     * 拉broker地址
+     * <p>
+     * 主从架构 -》从节点数据 / 主节点数据（两套ip都应该保存下来）
+     */
     public void fetchBrokerAddress() {
         String fetchBrokerAddressMsgId = UUID.randomUUID().toString();
         PullBrokerIpDTO pullBrokerIpDTO = new PullBrokerIpDTO();
         if (getBrokerClusterGroup() != null) {
-            pullBrokerIpDTO.setRole(BrokerRegistryEnum.MASTER.getDesc());
-        } else {
-            pullBrokerIpDTO.setRole(BrokerRegistryEnum.SINGLE.getDesc());
+            this.setBrokerRole("master");
+            pullBrokerIpDTO.setBrokerClusterGroup(brokerClusterGroup);
         }
+        pullBrokerIpDTO.setRole(this.getBrokerRole());
         pullBrokerIpDTO.setMsgId(fetchBrokerAddressMsgId);
-        TcpMsg heartBeatResponse = nameServerNettyRemoteClient.sendSyncMsg(new TcpMsg(NameServerEventCode.PULL_BROKER_IP_LIST.getCode(),
-                JSON.toJSONBytes(pullBrokerIpDTO)), fetchBrokerAddressMsgId);
+        TcpMsg heartBeatResponse = nameServerNettyRemoteClient.sendSyncMsg(new TcpMsg(NameServerEventCode.PULL_BROKER_IP_LIST.getCode(), JSON.toJSONBytes(pullBrokerIpDTO)), fetchBrokerAddressMsgId);
         //获取broker节点ip地址，并且缓存起来，可能由多个master-broker角色
         PullBrokerIpRespDTO pullBrokerIpRespDTO = JSON.parseObject(heartBeatResponse.getBody(), PullBrokerIpRespDTO.class);
         this.setBrokerAddressList(pullBrokerIpRespDTO.getAddressList());
-        logger.info("fetch broker address:{}", this.getBrokerAddressList());
+        this.setMasterAddressList(pullBrokerIpRespDTO.getMasterList());
+        logger.info("fetch broker address:{},master:{},slave:{}", this.getBrokerAddressList(), this.getMasterAddressList());
+        this.connectBroker();
     }
 
     /**
      * 连接broker程序
      */
     private void connectBroker() {
-        AssertUtils.isNotEmpty(this.getBrokerAddressList(), "broker地址不能为空");
-        for (String brokerIp : brokerAddressList) {
-            String[] brokerAddressArr = brokerIp.split(":");
-            BrokerNettyRemoteClient brokerNettyRemoteClient = new BrokerNettyRemoteClient(brokerAddressArr[0],
-                    Integer.valueOf(brokerAddressArr[1]));
-            brokerNettyRemoteClient.buildConnection();
-            this.getBrokerNettyRemoteClientMap().put(brokerIp, brokerNettyRemoteClient);
+        List<String> brokerAddressList = new ArrayList<>();
+        if ("single".equals(this.getBrokerRole())) {
+            AssertUtils.isNotEmpty(this.getBrokerAddressList(), "broker地址不能为空");
+            brokerAddressList = this.getBrokerAddressList();
+        } else if ("master".equals(this.getBrokerRole())) {
+            AssertUtils.isNotEmpty(this.getMasterAddressList(), "broker地址不能为空");
+            brokerAddressList = this.getMasterAddressList();
         }
+        //判断之前是否有链接过目标地址，以及链接是否正常，如果链接正常则没必要重新链接，避免无意义的通讯中断情况发生
+        List<BrokerNettyRemoteClient> newBrokerNettyRemoteClientList = new ArrayList<>();
+        for (String brokerIp : brokerAddressList) {
+            BrokerNettyRemoteClient brokerNettyRemoteClient = this.getBrokerNettyRemoteClientMap().get(brokerIp);
+            if (brokerNettyRemoteClient == null) {
+                //之前没有链接过，需要额外链接接入
+                String[] brokerAddressArr = brokerIp.split(":");
+                BrokerNettyRemoteClient newBrokerNettyRemoteClient = new BrokerNettyRemoteClient(brokerAddressArr[0], Integer.valueOf(brokerAddressArr[1]));
+                newBrokerNettyRemoteClient.buildConnection(new BrokerRemoteRespHandler());
+                //新的链接通道建立
+                newBrokerNettyRemoteClientList.add(newBrokerNettyRemoteClient);
+                continue;
+            }
+            //老链接依然需要使用，而且链接顺畅，则继续使用
+            if (brokerNettyRemoteClient.isChannelActive()) {
+                newBrokerNettyRemoteClientList.add(brokerNettyRemoteClient);
+                continue;
+            }
+            //老链接通讯失败，重连尝试
+            String[] brokerAddressArr = brokerIp.split(":");
+            BrokerNettyRemoteClient newBrokerNettyRemoteClient = new BrokerNettyRemoteClient(brokerAddressArr[0], Integer.valueOf(brokerAddressArr[1]));
+            newBrokerNettyRemoteClient.buildConnection(new BrokerRemoteRespHandler());
+            //新的链接通道建立
+            newBrokerNettyRemoteClientList.add(newBrokerNettyRemoteClient);
+        }
+        //需要被关闭的链接过滤出来，进行优雅暂停，然后切换使用新的链接
+        List<String> finalBrokerAddressList = brokerAddressList;
+        List<String> needRemoveBrokerId = this.getBrokerNettyRemoteClientMap().keySet().stream().filter(reqId -> !finalBrokerAddressList.contains(reqId)).collect(Collectors.toList());
+        for (String brokerReqId : needRemoveBrokerId) {
+            getBrokerNettyRemoteClientMap().get(brokerReqId).close();
+            this.getBrokerNettyRemoteClientMap().remove(brokerReqId);
+        }
+        this.setBrokerNettyRemoteClientMap(newBrokerNettyRemoteClientList.stream().collect(Collectors.toMap(BrokerNettyRemoteClient::getBrokerReqId, item -> item)));
     }
 
 
@@ -196,6 +255,7 @@ public class DefaultProducerImpl implements Producer {
             sendResult.setSendStatus(SendStatus.SUCCESS);
         } else if (responseStatus == SendMessageToBrokerResponseStatus.FAIL.getCode()) {
             sendResult.setSendStatus(SendStatus.FAIL);
+            logger.error("send mq fail:{}", sendMessageToBrokerResponseDTO.getStatus());
         }
         return sendResult;
     }
@@ -207,4 +267,29 @@ public class DefaultProducerImpl implements Producer {
         TcpMsg tcpMsg = new TcpMsg(BrokerEventCode.PUSH_MSG.getCode(), JSON.toJSONBytes(messageDTO));
         remoteClient.sendAsyncMsg(tcpMsg);
     }
+
+    public List<String> getMasterAddressList() {
+        return masterAddressList;
+    }
+
+    public void setMasterAddressList(List<String> masterAddressList) {
+        this.masterAddressList = masterAddressList;
+    }
+
+    public NameServerNettyRemoteClient getNameServerNettyRemoteClient() {
+        return nameServerNettyRemoteClient;
+    }
+
+    public void setNameServerNettyRemoteClient(NameServerNettyRemoteClient nameServerNettyRemoteClient) {
+        this.nameServerNettyRemoteClient = nameServerNettyRemoteClient;
+    }
+
+    public String getBrokerRole() {
+        return brokerRole;
+    }
+
+    public void setBrokerRole(String brokerRole) {
+        this.brokerRole = brokerRole;
+    }
 }
+

@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.tiny.mq.common.coder.TcpMsg;
 import org.tiny.mq.common.dto.StartSyncReqDTO;
 import org.tiny.mq.common.enums.BrokerEventCode;
+import org.tiny.mq.common.event.EventBus;
 import org.tiny.mq.common.remote.BrokerNettyRemoteClient;
 
 import java.util.UUID;
@@ -20,7 +21,7 @@ public class SlaveSyncService {
         Integer port = Integer.valueOf(addressInfo[1]);
         try {
             brokerNettyRemoteClient = new BrokerNettyRemoteClient(ip, port);
-            brokerNettyRemoteClient.buildConnection();
+            brokerNettyRemoteClient.buildConnection(new SlaveSyncServerHandler(new EventBus("slave-sync-eventbus")));
         } catch (Exception e) {
             logger.error("error connect master broker", e);
         }

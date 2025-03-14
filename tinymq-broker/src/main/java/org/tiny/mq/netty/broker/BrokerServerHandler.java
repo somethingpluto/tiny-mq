@@ -8,11 +8,14 @@ import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tiny.mq.cache.CommonCache;
+import org.tiny.mq.common.cache.BrokerServerSyncFutureManager;
 import org.tiny.mq.common.coder.TcpMsg;
 import org.tiny.mq.common.dto.*;
 import org.tiny.mq.common.enums.BrokerEventCode;
+import org.tiny.mq.common.enums.BrokerResponseCode;
 import org.tiny.mq.common.event.EventBus;
 import org.tiny.mq.common.event.model.Event;
+import org.tiny.mq.common.remote.SyncFuture;
 import org.tiny.mq.event.model.ConsumeMsgEvent;
 import org.tiny.mq.event.model.CreateTopicEvent;
 import org.tiny.mq.event.model.PushMsgEvent;
@@ -50,8 +53,16 @@ public class BrokerServerHandler extends SimpleChannelInboundHandler {
             event = handleCreateTopicEvent(body, channelHandlerContext);
         } else if (BrokerEventCode.START_SYNC_MSG.getCode() == code) {
             event = handleStartSyncMsgEvent(body, channelHandlerContext);
+        } else if (BrokerResponseCode.SLAVE_BROKER_ACCEPT_PUSH_MSG_RESP.getCode() == code) {
+            SendMessageToBrokerResponseDTO sendMessageToBrokerResponseDTO = JSON.parseObject(body, SendMessageToBrokerResponseDTO.class);
+            SyncFuture syncFuture = BrokerServerSyncFutureManager.get(sendMessageToBrokerResponseDTO.getMsgId());
+            if (syncFuture != null) {
+                syncFuture.setResponse(tcpMsg);
+            }
         }
-        eventBus.publish(event);
+        if (event != null) {
+            eventBus.publish(event);
+        }
     }
 
     private Event handleStartSyncMsgEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {
@@ -73,6 +84,7 @@ public class BrokerServerHandler extends SimpleChannelInboundHandler {
     private Event handlePushMsgEvent(byte[] body, ChannelHandlerContext channelHandlerContext) {
         MessageDTO messageDTO = JSON.parseObject(body, MessageDTO.class);
         PushMsgEvent pushMsgEvent = new PushMsgEvent();
+        pushMsgEvent.setMsgId(messageDTO.getMsgId());
         pushMsgEvent.setMessageDTO(messageDTO);
         pushMsgEvent.setChannelHandlerContext(channelHandlerContext);
         logger.info("收到消息推送内容:{},message is {}", new String(messageDTO.getBody()), JSON.toJSONString(messageDTO));

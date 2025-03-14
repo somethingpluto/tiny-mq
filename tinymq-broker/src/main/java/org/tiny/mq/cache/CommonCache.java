@@ -10,6 +10,7 @@ import org.tiny.mq.netty.nameserver.HeartBeatTaskManager;
 import org.tiny.mq.netty.nameserver.NameServerClient;
 import org.tiny.mq.rebalance.ConsumerInstance;
 import org.tiny.mq.rebalance.ConsumerInstancePool;
+import org.tiny.mq.slave.SlaveSyncService;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,8 +33,16 @@ public class CommonCache {
     private static Map<String, Map<String, List<ConsumerInstance>>> consumeHoldMap = new ConcurrentHashMap<>();
     private static ConsumerInstancePool consumerInstancePool = new ConsumerInstancePool();
     private static ConsumeQueueConsumeHandler consumeQueueConsumeHandler;
-
+    private static SlaveSyncService slaveSyncService;
     private static Map<String, ChannelHandlerContext> slaveChannelMap = new HashMap<>();
+
+    public static SlaveSyncService getSlaveSyncService() {
+        return slaveSyncService;
+    }
+
+    public static void setSlaveSyncService(SlaveSyncService slaveSyncService) {
+        CommonCache.slaveSyncService = slaveSyncService;
+    }
 
     public static void setConsumerInstancePool(ConsumerInstancePool consumerInstancePool) {
         CommonCache.consumerInstancePool = consumerInstancePool;

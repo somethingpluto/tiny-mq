@@ -83,7 +83,7 @@ public class TcpNettyServerHandler extends SimpleChannelInboundHandler {
         PullBrokerIpEvent pullBrokerIpEvent = new PullBrokerIpEvent();
         pullBrokerIpEvent.setRole(pullBrokerIpDTO.getRole());
         pullBrokerIpEvent.setMsgId(pullBrokerIpDTO.getMsgId());
-        pullBrokerIpEvent.setBrokerClusterGroup(pullBrokerIpEvent.getBrokerClusterGroup());
+        pullBrokerIpEvent.setBrokerClusterGroup(pullBrokerIpDTO.getBrokerClusterGroup());
         pullBrokerIpEvent.setChannelHandlerContext(channelHandlerContext);
         return pullBrokerIpEvent;
     }

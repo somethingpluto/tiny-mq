@@ -1,3 +1,4 @@
+import com.alibaba.fastjson.JSON;
 import org.junit.Before;
 import org.junit.Test;
 import org.tiny.mq.common.dto.MessageDTO;
@@ -22,22 +23,37 @@ public class TestProducerSuite {
     }
 
     @Test
-    public void sendMsg() throws InterruptedException {
-        long i = 1;
-        while (true) {
-            TimeUnit.MILLISECONDS.sleep(500);
-            MessageDTO messageDTO = new MessageDTO();
-            messageDTO.setTopic("order_cancel_topic");
-            messageDTO.setBody(("mq content-" + i).getBytes());
-            SendResult sendResult = producer.send(messageDTO);
-            System.out.println(sendResult.getSendStatus());
-            i++;
+    public void sendSyncMsg() throws InterruptedException {
+        for (int i = 0; i < 100; i++) {
+            try {
+                TimeUnit.SECONDS.sleep(1);
+                MessageDTO messageDTO = new MessageDTO();
+                messageDTO.setTopic("order_enter");
+                messageDTO.setBody(("mq content-" + i).getBytes());
+                SendResult sendResult = producer.send(messageDTO);
+                System.out.println(JSON.toJSONString(sendResult));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
     @Test
-    public void pullMasterBroker() {
-        System.out.println("pull master");
+    public void sendAsyncMsg() throws InterruptedException {
+        for (int i = 0; i < 100; i++) {
+            TimeUnit.SECONDS.sleep(1);
+            MessageDTO messageDTO = new MessageDTO();
+            messageDTO.setTopic("order_enter");
+            messageDTO.setBody(("mq content-" + i).getBytes());
+            producer.sendAsync(messageDTO);
+            System.out.println("async send ok");
+        }
     }
+
+    @Test
+    public void testClusterBroker() {
+        System.out.println("启动broker集群部署模式");
+    }
+
 
 }

@@ -28,7 +28,7 @@ public class PullBrokerIpListener implements Listener<PullBrokerIpEvent> {
         Map<String, ServiceInstance> serviceInstanceMap = CommonCache.getServiceInstanceManager().getServiceInstanceMap();
         for (String reqId : serviceInstanceMap.keySet()) {
             ServiceInstance serviceInstance = serviceInstanceMap.get(reqId);
-            // 先确定要拉去的对象的类型 要拉broker
+
             if (RegistryTypeEnum.BROKER.getCode().equals(serviceInstance.getRegistryType())) {
                 Map<String, Object> brokerAttrs = serviceInstance.getAttrs();
                 Object group = brokerAttrs.getOrDefault("group", "");

@@ -16,7 +16,7 @@ public class TestConsumerSuite {
     public void testConsumeMsg() throws InterruptedException {
         consumer = new DefaultMqConsumer();
         consumer.setNsIp("127.0.0.1");
-        consumer.setNsPort(9093);
+        consumer.setNsPort(8990);
         consumer.setNsPwd("eagle_mq");
         consumer.setNsUser("eagle_mq");
         consumer.setTopic("order_cancel_topic");

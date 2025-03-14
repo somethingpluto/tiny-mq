@@ -60,6 +60,7 @@ public class BrokerStartUp {
         if (!BrokerClusterModeEnum.MASTER_SLAVE.getDesc().equals(CommonCache.getGlobalProperties().getBrokerClusterMode()) || "master".equals(CommonCache.getGlobalProperties().getBrokerClusterRole())) {
             return;
         }
+        // 获取主节点的ip
         String address = CommonCache.getNameServerClient().queryBrokerClusterMaster();
         SlaveSyncService slaveSyncService = new SlaveSyncService();
         slaveSyncService.connectToMasterBrokerNode(address);

@@ -8,6 +8,7 @@ import org.tiny.mq.common.coder.TcpMsg;
 import org.tiny.mq.common.dto.*;
 import org.tiny.mq.common.enums.*;
 import org.tiny.mq.common.remote.BrokerNettyRemoteClient;
+import org.tiny.mq.common.remote.BrokerRemoteRespHandler;
 import org.tiny.mq.common.remote.NameServerNettyRemoteClient;
 import org.tiny.mq.common.utils.AssertUtils;
 
@@ -135,9 +136,8 @@ public class DefaultMqConsumer {
         AssertUtils.isNotEmpty(this.getBrokerAddressList(), "broker地址不能为空");
         for (String brokerIp : brokerAddressList) {
             String[] brokerAddressArr = brokerIp.split(":");
-            BrokerNettyRemoteClient brokerNettyRemoteClient = new BrokerNettyRemoteClient(brokerAddressArr[0],
-                    Integer.valueOf(brokerAddressArr[1]));
-            brokerNettyRemoteClient.buildConnection();
+            BrokerNettyRemoteClient brokerNettyRemoteClient = new BrokerNettyRemoteClient(brokerAddressArr[0], Integer.valueOf(brokerAddressArr[1]));
+            brokerNettyRemoteClient.buildConnection(new BrokerRemoteRespHandler());
             this.getBrokerNettyRemoteClientMap().put(brokerIp, brokerNettyRemoteClient);
         }
     }
@@ -179,8 +179,7 @@ public class DefaultMqConsumer {
                         String heartBeatMsgId = UUID.randomUUID().toString();
                         HeartBeatDTO heartBeatDTO = new HeartBeatDTO();
                         heartBeatDTO.setMsgId(heartBeatMsgId);
-                        TcpMsg heartBeatResponse = nameServerNettyRemoteClient.sendSyncMsg(new TcpMsg(NameServerEventCode.HEART_BEAT.getCode(),
-                                JSON.toJSONBytes(heartBeatDTO)), heartBeatMsgId);
+                        TcpMsg heartBeatResponse = nameServerNettyRemoteClient.sendSyncMsg(new TcpMsg(NameServerEventCode.HEART_BEAT.getCode(), JSON.toJSONBytes(heartBeatDTO)), heartBeatMsgId);
                         logger.info("heart beat response data is :{}", JSON.parseObject(heartBeatResponse.getBody()));
                     } catch (InterruptedException e) {
                         e.printStackTrace();
