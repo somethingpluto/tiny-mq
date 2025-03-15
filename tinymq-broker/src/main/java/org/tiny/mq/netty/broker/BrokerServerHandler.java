@@ -16,10 +16,7 @@ import org.tiny.mq.common.enums.BrokerResponseCode;
 import org.tiny.mq.common.event.EventBus;
 import org.tiny.mq.common.event.model.Event;
 import org.tiny.mq.common.remote.SyncFuture;
-import org.tiny.mq.event.model.ConsumeMsgEvent;
-import org.tiny.mq.event.model.CreateTopicEvent;
-import org.tiny.mq.event.model.PushMsgEvent;
-import org.tiny.mq.event.model.StartSyncEvent;
+import org.tiny.mq.event.model.*;
 import org.tiny.mq.model.ConsumeMsgAckEvent;
 
 import java.net.InetSocketAddress;
@@ -59,6 +56,8 @@ public class BrokerServerHandler extends SimpleChannelInboundHandler {
             if (syncFuture != null) {
                 syncFuture.setResponse(tcpMsg);
             }
+        } else if (BrokerEventCode.CONSUME_LATER.getCode() == code) {
+            event = handleConsumeMsgRetry(body, channelHandlerContext);
         }
         if (event != null) {
             eventBus.publish(event);
@@ -114,6 +113,15 @@ public class BrokerServerHandler extends SimpleChannelInboundHandler {
         consumeMsgAckEvent.setMsgId(consumeMsgAckReqDTO.getMsgId());
         consumeMsgAckEvent.setChannelHandlerContext(channelHandlerContext);
         return consumeMsgAckEvent;
+    }
+
+    private Event handleConsumeMsgRetry(byte[] body, ChannelHandlerContext channelHandlerContext) {
+        ConsumeMsgRetryReqDTO consumeMsgRetryReqDTO = JSON.parseObject(body, ConsumeMsgRetryReqDTO.class);
+        ConsumeMsgRetryEvent consumeMsgRetryEvent = new ConsumeMsgRetryEvent();
+        consumeMsgRetryEvent.setMsgId(consumeMsgRetryReqDTO.getMsgId());
+        consumeMsgRetryEvent.setConsumeMsgLaterReqDTO(consumeMsgRetryReqDTO);
+        consumeMsgRetryEvent.setChannelHandlerContext(channelHandlerContext);
+        return consumeMsgRetryEvent;
     }
 
     @Override

@@ -56,4 +56,28 @@ public class TestConsumerSuite {
         consumer.start();
     }
 
+
+    @Test
+    public void testConsumeMsg3() throws InterruptedException {
+        consumer = new DefaultMqConsumer();
+        consumer.setNsIp("127.0.0.1");
+        consumer.setNsPort(9093);
+        consumer.setNsPwd("tiny_mq");
+        consumer.setNsUser("tiny_mq");
+        consumer.setTopic("order_enter");
+        consumer.setConsumeGroup("tiny_mq_test_group");
+        consumer.setBatchSize(1);
+        consumer.setMessageConsumeListener(new MessageConsumeListener() {
+            @Override
+            public ConsumeResult consume(List<ConsumeMessage> consumeMessages) {
+                for (ConsumeMessage consumeMessage : consumeMessages) {
+                    System.out.println("消费端获取的数据内容:" + new String(consumeMessage.getBody()));
+                }
+                System.out.println("测试消息重拾功能");
+                return ConsumeResult.CONSUME_LATER();
+            }
+        });
+        consumer.start();
+    }
+
 }

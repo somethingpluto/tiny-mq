@@ -28,11 +28,10 @@ public class PullBrokerIpListener implements Listener<PullBrokerIpEvent> {
         Map<String, ServiceInstance> serviceInstanceMap = CommonCache.getServiceInstanceManager().getServiceInstanceMap();
         for (String reqId : serviceInstanceMap.keySet()) {
             ServiceInstance serviceInstance = serviceInstanceMap.get(reqId);
-
             if (RegistryTypeEnum.BROKER.getCode().equals(serviceInstance.getRegistryType())) {
                 Map<String, Object> brokerAttrs = serviceInstance.getAttrs();
-                Object group = brokerAttrs.getOrDefault("group", "");
-                // 只考虑一个组里面的情况
+                String group = (String) brokerAttrs.getOrDefault("group", "");
+                //先命中集群组，再根据角色进行判断
                 if (group.equals(event.getBrokerClusterGroup())) {
                     String role = (String) brokerAttrs.get("role");
                     if (PullBrokerIpRoleEnum.MASTER.getCode().equals(pullRole) && PullBrokerIpRoleEnum.MASTER.getCode().equals(role)) {
@@ -43,12 +42,12 @@ public class PullBrokerIpListener implements Listener<PullBrokerIpEvent> {
                         addressList.add(serviceInstance.getIp() + ":" + serviceInstance.getPort());
                     }
                 }
-
             }
         }
         pullBrokerIpRespDTO.setMsgId(event.getMsgId());
         pullBrokerIpRespDTO.setMasterList(masterAddressList);
         pullBrokerIpRespDTO.setSlaveList(slaveAddressList);
+        //防止ip重复
         pullBrokerIpRespDTO.setAddressList(addressList.stream().distinct().collect(Collectors.toList()));
         event.getChannelHandlerContext().writeAndFlush(new TcpMsg(NameServerResponseCode.PULL_BROKER_ADDRESS_SUCCESS.getCode(), JSON.toJSONBytes(pullBrokerIpRespDTO)));
     }

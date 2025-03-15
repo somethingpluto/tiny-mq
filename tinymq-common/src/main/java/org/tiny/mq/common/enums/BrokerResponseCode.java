@@ -10,7 +10,8 @@ public enum BrokerResponseCode {
     QUEUE_SIZE_TOO_LARGE(2005, "queue size 太大"),
     START_SYNC_SUCCESS(2006, "开启同步模式成功"),
     SLAVE_SYNC_RESP(2007, "broker从节点回复主节点"),
-    SLAVE_BROKER_ACCEPT_PUSH_MSG_RESP(2008, "从节点接收主节点发送消息后的返回");
+    SLAVE_BROKER_ACCEPT_PUSH_MSG_RESP(2008, "从节点接收主节点发送消息后的返回"),
+    CONSUME_MSG_RETRY_RESP(2009, "消费broker消息重试，响应code");
 
     int code;
     String desc;

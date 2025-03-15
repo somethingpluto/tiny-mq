@@ -48,6 +48,12 @@ public class RemoteBrokerRespHandler extends SimpleChannelInboundHandler {
             if (syncFuture != null) {
                 syncFuture.setResponse(tcpMsg);
             }
+        } else if (code == BrokerResponseCode.CONSUME_MSG_RETRY_RESP.getCode()) {
+            ConsumeMsgAckRespDTO consumeMsgAckRespDTO = JSON.parseObject(body, ConsumeMsgAckRespDTO.class);
+            SyncFuture syncFuture = BrokerServerSyncFutureManager.get(consumeMsgAckRespDTO.getMsgId());
+            if (syncFuture != null) {
+                syncFuture.setResponse(tcpMsg);
+            }
         }
     }
 

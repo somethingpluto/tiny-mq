@@ -41,6 +41,8 @@ public class DefaultMqConsumer {
     private String brokerClusterGroup;
     private NameServerNettyRemoteClient nameServerNettyRemoteClient;
     private List<String> brokerAddressList;
+    private List<String> masterAddressList;
+    private List<String> slaveAddressList;
     private MessageConsumeListener messageConsumeListener;
     private Map<String, BrokerNettyRemoteClient> brokerNettyRemoteClientMap = new ConcurrentHashMap<>();
     private CountDownLatch countDownLatch = new CountDownLatch(1);
@@ -63,21 +65,38 @@ public class DefaultMqConsumer {
      */
     private void startConsumeMsgTask() {
         Thread consumeTask = new Thread(() -> {
-            if ("single".equals(getBrokerRole())) {
-                while (true) {
-                    try {
-                        String defaultBrokerAddress = brokerAddressList.get(0);
+            while (true) {
+                try {
+                    List<String> brokerNodeAddressList = new ArrayList<>();
+                    String currentRole = getBrokerRole();
+                    if (currentRole.equals(BrokerRegistryEnum.SINGLE.getDesc())) {
+                        brokerNodeAddressList = this.getBrokerAddressList();
+                    } else if (currentRole.equals(BrokerRegistryEnum.MASTER.getDesc())) {
+                        brokerNodeAddressList = this.getMasterAddressList();
+                    } else if (currentRole.equals(BrokerRegistryEnum.SLAVE.getDesc())) {
+                        brokerNodeAddressList = this.getSlaveAddressList();
+                    }
+                    if (CollectionUtils.isEmpty(brokerNodeAddressList)) {
+                        // 等一会
+                        TimeUnit.MILLISECONDS.sleep(EACH_BATCH_PULL_MSG_INTER_WHEN_NO_MSG);
+                        logger.warn("broker address is empty!");
+                        continue;
+                    }
+                    for (String brokerAddress : brokerAddressList) {
                         String msgId = UUID.randomUUID().toString();
-                        BrokerNettyRemoteClient brokerNettyRemoteClient = this.getBrokerNettyRemoteClientMap().get(defaultBrokerAddress);
+                        BrokerNettyRemoteClient brokerNettyRemoteClient = this.getBrokerNettyRemoteClientMap().get(brokerAddress);
                         ConsumeMsgReqDTO consumeMsgReqDTO = new ConsumeMsgReqDTO();
                         consumeMsgReqDTO.setMsgId(msgId);
                         consumeMsgReqDTO.setConsumeGroup(consumeGroup);
-                        consumeMsgReqDTO.setBatchSize(batchSize);
                         consumeMsgReqDTO.setTopic(topic);
-                        TcpMsg pullReqMsg = new TcpMsg(BrokerEventCode.CONSUME_MSG.getCode(), JSON.toJSONBytes(consumeMsgReqDTO));
-                        TcpMsg pullMsgResp = brokerNettyRemoteClient.sendSyncMsg(pullReqMsg, msgId);
+                        consumeMsgReqDTO.setBatchSize(batchSize);
+                        TcpMsg consumeReqMsg = new TcpMsg(BrokerEventCode.CONSUME_MSG.getCode(), JSON.toJSONBytes(consumeMsgReqDTO));
+                        TcpMsg pullMsgResp = brokerNettyRemoteClient.sendSyncMsg(consumeReqMsg, msgId);
+                        List<ConsumeMsgRespDTO> consumeMsgRespDTOS = null;
                         ConsumeMsgBaseRespDTO consumeMsgBaseRespDTO = JSON.parseObject(pullMsgResp.getBody(), ConsumeMsgBaseRespDTO.class);
-                        List<ConsumeMsgRespDTO> consumeMsgRespDTOS = consumeMsgBaseRespDTO.getConsumeMsgRespDTOList();
+                        if (consumeMsgBaseRespDTO != null) {
+                            consumeMsgRespDTOS = consumeMsgBaseRespDTO.getConsumeMsgRespDTOList();
+                        }
                         boolean brokerHasData = false;
                         if (CollectionUtils.isNotEmpty(consumeMsgRespDTOS)) {
                             for (ConsumeMsgRespDTO consumeMsgRespDTO : consumeMsgRespDTOS) {
@@ -111,6 +130,17 @@ public class DefaultMqConsumer {
                                     } else {
                                         logger.error("consume ack fail!");
                                     }
+                                } else if (consumeResult.getConsumeResultStatus() == ConsumeResultStatus.CONSUME_LATER.getCode()) {
+                                    String consuerLaterMsgId = UUID.randomUUID().toString();
+                                    // 消费失败 后面再消费
+                                    ConsumeMsgRetryReqDTO consumeMsgLaterReqDTO = new ConsumeMsgRetryReqDTO();
+                                    consumeMsgLaterReqDTO.setTopic(topic);
+                                    consumeMsgLaterReqDTO.setQueueId(queueId);
+                                    consumeMsgLaterReqDTO.setConsumeGroup(consumeGroup);
+                                    consumeMsgLaterReqDTO.setMsgId(consuerLaterMsgId);
+                                    TcpMsg tcpMsg = new TcpMsg(BrokerEventCode.CONSUME_LATER.getCode(), JSON.toJSONBytes(consumeMsgLaterReqDTO));
+                                    TcpMsg consumeLaterResp = brokerNettyRemoteClient.sendSyncMsg(tcpMsg, consuerLaterMsgId);
+                                    logger.info("consume later resp:{}", JSON.toJSONString(consumeLaterResp));
                                 }
                             }
                         }
@@ -119,8 +149,13 @@ public class DefaultMqConsumer {
                         } else {
                             TimeUnit.MILLISECONDS.sleep(EACH_BATCH_PULL_MSG_INTER_WHEN_NO_MSG);
                         }
-                    } catch (Exception e) {
-                        logger.error("consume has error:", e);
+                    }
+                } catch (Exception e) {
+                    logger.error("consume has error:", e);
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(EACH_BATCH_PULL_MSG_INTER_WHEN_NO_MSG);
+                    } catch (InterruptedException ex) {
+                        throw new RuntimeException(ex);
                     }
                 }
             }
@@ -168,8 +203,7 @@ public class DefaultMqConsumer {
         // 对比新旧连接 对老链接需要优雅关闭
         List<String> finalBrokerAddressList = brokerAddressList;
         List<String> needCloseClint = this.getBrokerNettyRemoteClientMap().keySet().stream().filter(reqId -> !finalBrokerAddressList.contains(reqId)).collect(Collectors.toList());
-        for (String reqId :
-                needCloseClint) {
+        for (String reqId : needCloseClint) {
             this.getBrokerNettyRemoteClientMap().get(reqId).close();
             this.getBrokerNettyRemoteClientMap().remove(reqId);
         }
@@ -217,6 +251,8 @@ public class DefaultMqConsumer {
         TcpMsg heartBeatResponse = nameServerNettyRemoteClient.sendSyncMsg(new TcpMsg(NameServerEventCode.PULL_BROKER_IP_LIST.getCode(), JSON.toJSONBytes(pullBrokerIpDTO)), fetchBrokerAddressMsgId);
         PullBrokerIpRespDTO pullBrokerIpRespDTO = JSON.parseObject(heartBeatResponse.getBody(), PullBrokerIpRespDTO.class);
         this.setBrokerAddressList(pullBrokerIpRespDTO.getAddressList());
+        this.setMasterAddressList(pullBrokerIpRespDTO.getMasterList());
+        this.setSlaveAddressList(pullBrokerIpRespDTO.getSlaveList());
         logger.info("fetch broker address:{}", this.getBrokerAddressList());
         this.connectBroker();
     }
@@ -375,5 +411,19 @@ public class DefaultMqConsumer {
         this.batchSize = batchSize;
     }
 
+    public List<String> getMasterAddressList() {
+        return masterAddressList;
+    }
 
+    public void setMasterAddressList(List<String> masterAddressList) {
+        this.masterAddressList = masterAddressList;
+    }
+
+    public List<String> getSlaveAddressList() {
+        return slaveAddressList;
+    }
+
+    public void setSlaveAddressList(List<String> slaveAddressList) {
+        this.slaveAddressList = slaveAddressList;
+    }
 }
