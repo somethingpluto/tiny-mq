@@ -19,6 +19,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 
 public class DefaultMqConsumer {
@@ -51,8 +52,8 @@ public class DefaultMqConsumer {
         if (isRegistrySuccess) {
             this.startHeartBeatTask();
             this.fetchBrokerAddress();
-            this.connectBroker();
             this.startConsumeMsgTask();
+            this.startRefreshBrokerAddressTask();
             countDownLatch.await();
         }
     }
@@ -62,7 +63,6 @@ public class DefaultMqConsumer {
      */
     private void startConsumeMsgTask() {
         Thread consumeTask = new Thread(() -> {
-            //不知道对应topic位于哪个Broker节点 todo
             if ("single".equals(getBrokerRole())) {
                 while (true) {
                     try {
@@ -133,13 +133,47 @@ public class DefaultMqConsumer {
      * 连接broker程序
      */
     private void connectBroker() {
-        AssertUtils.isNotEmpty(this.getBrokerAddressList(), "broker地址不能为空");
-        for (String brokerIp : brokerAddressList) {
-            String[] brokerAddressArr = brokerIp.split(":");
-            BrokerNettyRemoteClient brokerNettyRemoteClient = new BrokerNettyRemoteClient(brokerAddressArr[0], Integer.valueOf(brokerAddressArr[1]));
-            brokerNettyRemoteClient.buildConnection(new BrokerRemoteRespHandler());
-            this.getBrokerNettyRemoteClientMap().put(brokerIp, brokerNettyRemoteClient);
+        List<String> brokerAddressList = new ArrayList<>();
+        String currentBrokerRole = this.getBrokerRole();
+        if (currentBrokerRole.equals(BrokerRegistryEnum.SINGLE.getDesc())) { // 单机版本
+            AssertUtils.isNotEmpty(this.getBrokerAddressList(), "broker address should not be empty");
+            brokerAddressList = this.getBrokerAddressList();
+        } else if (currentBrokerRole.equals(BrokerRegistryEnum.MASTER.getDesc())) { // 主从模式下的master
+            AssertUtils.isNotEmpty(this.getBrokerAddressList(), "broker address should not be empty");
+            brokerAddressList = this.getBrokerAddressList();
+        } else if (currentBrokerRole.equals(BrokerRegistryEnum.SLAVE.getDesc())) { // 主从模式下的slave
+            AssertUtils.isNotEmpty(this.getBrokerAddressList(), "broker address should not be empty");
+            brokerAddressList = this.getBrokerAddressList();
         }
+        ArrayList<BrokerNettyRemoteClient> newBrokerRemoteClientList = new ArrayList<>();
+        // 遍历address list 看看有没有连接 没有则新建 有则保存
+        for (String brokerAddress : brokerAddressList) {
+            BrokerNettyRemoteClient brokerNettyRemoteClient = this.brokerNettyRemoteClientMap.get(brokerAddress);
+            if (brokerNettyRemoteClient == null) { // 新的地址 要新建连接
+                String[] brokerAddressInfo = brokerAddress.split(":");
+                BrokerNettyRemoteClient newBrokerNettyRemoteClient = new BrokerNettyRemoteClient(brokerAddressInfo[0], Integer.valueOf(brokerAddressInfo[1]));
+                newBrokerNettyRemoteClient.buildConnection(new BrokerRemoteRespHandler());
+                newBrokerRemoteClientList.add(newBrokerNettyRemoteClient);
+                continue;
+            }
+            if (brokerNettyRemoteClient.isChannelActive()) {
+                newBrokerRemoteClientList.add(brokerNettyRemoteClient);
+            } else { // 老连接不行了
+                String[] brokerAddressInfo = brokerAddress.split(":");
+                BrokerNettyRemoteClient newBrokerNettyRemoteClient = new BrokerNettyRemoteClient(brokerAddressInfo[0], Integer.valueOf(brokerAddressInfo[1]));
+                newBrokerNettyRemoteClient.buildConnection(new BrokerRemoteRespHandler());
+                newBrokerRemoteClientList.add(newBrokerNettyRemoteClient);
+            }
+        }
+        // 对比新旧连接 对老链接需要优雅关闭
+        List<String> finalBrokerAddressList = brokerAddressList;
+        List<String> needCloseClint = this.getBrokerNettyRemoteClientMap().keySet().stream().filter(reqId -> !finalBrokerAddressList.contains(reqId)).collect(Collectors.toList());
+        for (String reqId :
+                needCloseClint) {
+            this.getBrokerNettyRemoteClientMap().get(reqId).close();
+            this.getBrokerNettyRemoteClientMap().remove(reqId);
+        }
+        this.setBrokerNettyRemoteClientMap(newBrokerRemoteClientList.stream().collect(Collectors.toMap(BrokerNettyRemoteClient::getBrokerReqId, item -> item)));
     }
 
 
@@ -165,6 +199,44 @@ public class DefaultMqConsumer {
         }
     }
 
+
+    /**
+     * 拉broker地址
+     * <p>
+     * 主从架构下 从节点拉取数据 主节点拉去数据
+     */
+    public void fetchBrokerAddress() {
+        String fetchBrokerAddressMsgId = UUID.randomUUID().toString();
+        PullBrokerIpDTO pullBrokerIpDTO = new PullBrokerIpDTO();
+        if (getBrokerClusterGroup() != null) {
+            pullBrokerIpDTO.setBrokerClusterGroup(brokerClusterGroup);
+        } else {
+            pullBrokerIpDTO.setRole(brokerRole);
+        }
+        pullBrokerIpDTO.setMsgId(fetchBrokerAddressMsgId);
+        TcpMsg heartBeatResponse = nameServerNettyRemoteClient.sendSyncMsg(new TcpMsg(NameServerEventCode.PULL_BROKER_IP_LIST.getCode(), JSON.toJSONBytes(pullBrokerIpDTO)), fetchBrokerAddressMsgId);
+        PullBrokerIpRespDTO pullBrokerIpRespDTO = JSON.parseObject(heartBeatResponse.getBody(), PullBrokerIpRespDTO.class);
+        this.setBrokerAddressList(pullBrokerIpRespDTO.getAddressList());
+        logger.info("fetch broker address:{}", this.getBrokerAddressList());
+        this.connectBroker();
+    }
+
+    public void startRefreshBrokerAddressTask() {
+        Thread thread = new Thread(() -> {
+            while (true) {
+                try {
+                    TimeUnit.SECONDS.sleep(3);
+                    fetchBrokerAddress();
+                } catch (Exception e) {
+                    logger.error("refresh broker address job error:", e);
+                }
+            }
+        });
+        thread.setName("refresh-broker-address");
+        thread.start();
+    }
+
+
     /**
      * 启动心跳任务
      */
@@ -189,28 +261,6 @@ public class DefaultMqConsumer {
         }, "heart-beat-task");
         heartBeatTask.start();
     }
-
-    /**
-     * 拉broker地址
-     * <p>
-     * 主从架构下 从节点拉取数据 主节点拉去数据
-     */
-    public void fetchBrokerAddress() {
-        String fetchBrokerAddressMsgId = UUID.randomUUID().toString();
-        PullBrokerIpDTO pullBrokerIpDTO = new PullBrokerIpDTO();
-        if (getBrokerClusterGroup() != null) {
-            pullBrokerIpDTO.setBrokerClusterGroup(brokerClusterGroup);
-        } else {
-            pullBrokerIpDTO.setRole(brokerRole);
-        }
-        pullBrokerIpDTO.setMsgId(fetchBrokerAddressMsgId);
-        TcpMsg heartBeatResponse = nameServerNettyRemoteClient.sendSyncMsg(new TcpMsg(NameServerEventCode.PULL_BROKER_IP_LIST.getCode(), JSON.toJSONBytes(pullBrokerIpDTO)), fetchBrokerAddressMsgId);
-        //获取broker节点ip地址，并且缓存起来，可能由多个master-broker角色
-        PullBrokerIpRespDTO pullBrokerIpRespDTO = JSON.parseObject(heartBeatResponse.getBody(), PullBrokerIpRespDTO.class);
-        this.setBrokerAddressList(pullBrokerIpRespDTO.getAddressList());
-        logger.info("fetch broker address:{}", this.getBrokerAddressList());
-    }
-
 
     public String getBrokerClusterGroup() {
         return brokerClusterGroup;

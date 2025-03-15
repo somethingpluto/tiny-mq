@@ -23,10 +23,6 @@ import java.util.stream.Collectors;
 public class DefaultProducerImpl implements Producer {
 
     private static Logger logger = LoggerFactory.getLogger(DefaultProducerImpl.class);
-
-    //连接nameserver，给nameserver发送心跳，拉取broker地址
-    //与broker建立连接，发送数据给到broker节点
-
     private String nsIp;
     private Integer nsPort;
     private String nsUser;

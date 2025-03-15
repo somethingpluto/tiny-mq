@@ -22,7 +22,6 @@ import java.net.InetSocketAddress;
 
 @ChannelHandler.Sharable
 public class TcpNettyServerHandler extends SimpleChannelInboundHandler {
-
     private EventBus eventBus;
 
     public TcpNettyServerHandler(EventBus eventBus) {
@@ -90,11 +89,11 @@ public class TcpNettyServerHandler extends SimpleChannelInboundHandler {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        //如果依赖任务剔除节点，会有三个心跳周期的延迟，做到链接断开立马剔除的效果
         UnRegistryEvent unRegistryEvent = new UnRegistryEvent();
         unRegistryEvent.setChannelHandlerContext(ctx);
         eventBus.publish(unRegistryEvent);
     }
+
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {

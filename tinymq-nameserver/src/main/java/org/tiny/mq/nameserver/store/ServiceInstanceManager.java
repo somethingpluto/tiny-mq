@@ -1,5 +1,6 @@
 package org.tiny.mq.nameserver.store;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -25,11 +26,22 @@ public class ServiceInstanceManager {
         return serviceInstanceMap.get(brokerIp + ":" + brokerPort);
     }
 
+    public ServiceInstance get(String address) {
+        return serviceInstanceMap.get(address);
+    }
+
     public ServiceInstance remove(String key) {
         return serviceInstanceMap.remove(key);
     }
 
     public Map<String, ServiceInstance> getServiceInstanceMap() {
         return serviceInstanceMap;
+    }
+
+    public synchronized void reload(List<ServiceInstance> slaveList) {
+        serviceInstanceMap.clear();
+        for (ServiceInstance serviceInstance : slaveList) {
+            this.put(serviceInstance);
+        }
     }
 }

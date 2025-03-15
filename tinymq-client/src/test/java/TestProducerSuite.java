@@ -24,11 +24,10 @@ public class TestProducerSuite {
 
     @Test
     public void sendSyncMsg() throws InterruptedException {
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 1000000; i++) {
             try {
-                TimeUnit.SECONDS.sleep(1);
                 MessageDTO messageDTO = new MessageDTO();
-                messageDTO.setTopic("order_enter");
+                messageDTO.setTopic("user_all_info");
                 messageDTO.setBody(("mq content-" + i).getBytes());
                 SendResult sendResult = producer.send(messageDTO);
                 System.out.println(JSON.toJSONString(sendResult));
