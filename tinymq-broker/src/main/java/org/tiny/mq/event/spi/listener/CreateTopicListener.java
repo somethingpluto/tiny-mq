@@ -60,7 +60,6 @@ public class CreateTopicListener implements Listener<CreateTopicEvent> {
     }
 
     private static void createTopicFile(String topicName) throws IOException {
-        // 2.创建对应的topic
         String baseCommitLogDirPath = LogFileNameUtil.buildCommitLogBasePath(topicName);
         File commitLogDir = new File(baseCommitLogDirPath);
         commitLogDir.mkdir();

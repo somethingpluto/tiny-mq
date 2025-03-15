@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tiny.mq.cache.CommonCache;
 import org.tiny.mq.common.coder.TcpMsg;
-import org.tiny.mq.common.dto.PullBrokerIpDTO;
+import org.tiny.mq.common.dto.PullBrokerIpReqDTO;
 import org.tiny.mq.common.dto.PullBrokerIpRespDTO;
 import org.tiny.mq.common.dto.ServiceRegistryReqDTO;
 import org.tiny.mq.common.enums.*;
@@ -109,7 +109,7 @@ public class NameServerClient {
         if (!BrokerClusterModeEnum.MASTER_SLAVE.getDesc().equals(clusterMode)) {
             return null;
         }
-        PullBrokerIpDTO pullBrokerIpDTO = new PullBrokerIpDTO();
+        PullBrokerIpReqDTO pullBrokerIpDTO = new PullBrokerIpReqDTO();
         String msgId = UUID.randomUUID().toString();
         pullBrokerIpDTO.setMsgId(msgId);
         pullBrokerIpDTO.setBrokerClusterGroup(CommonCache.getGlobalProperties().getBrokerClusterGroup());

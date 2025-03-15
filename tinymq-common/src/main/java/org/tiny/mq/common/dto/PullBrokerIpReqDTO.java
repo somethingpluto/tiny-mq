@@ -1,7 +1,7 @@
 package org.tiny.mq.common.dto;
 
 
-public class PullBrokerIpDTO extends BaseNameServerRemoteDTO {
+public class PullBrokerIpReqDTO extends BaseNameServerRemoteDTO {
 
     private String role;
     private String brokerClusterGroup;

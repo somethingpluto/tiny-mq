@@ -7,7 +7,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.internal.StringUtil;
 import org.tiny.mq.common.coder.TcpMsg;
 import org.tiny.mq.common.dto.HeartBeatDTO;
-import org.tiny.mq.common.dto.PullBrokerIpDTO;
+import org.tiny.mq.common.dto.PullBrokerIpReqDTO;
 import org.tiny.mq.common.dto.ServiceRegistryReqDTO;
 import org.tiny.mq.common.enums.NameServerEventCode;
 import org.tiny.mq.common.event.EventBus;
@@ -78,7 +78,7 @@ public class TcpNettyServerHandler extends SimpleChannelInboundHandler {
     }
 
     private Event handlePullBrokerIPList(byte[] body, ChannelHandlerContext channelHandlerContext) {
-        PullBrokerIpDTO pullBrokerIpDTO = JSON.parseObject(body, PullBrokerIpDTO.class);
+        PullBrokerIpReqDTO pullBrokerIpDTO = JSON.parseObject(body, PullBrokerIpReqDTO.class);
         PullBrokerIpEvent pullBrokerIpEvent = new PullBrokerIpEvent();
         pullBrokerIpEvent.setRole(pullBrokerIpDTO.getRole());
         pullBrokerIpEvent.setMsgId(pullBrokerIpDTO.getMsgId());

@@ -34,7 +34,7 @@ public class DefaultMqConsumer {
     private String nsPwd;
     private String topic;
     private String consumeGroup;
-    private String brokerRole = "single";
+    private String brokerRole = "master";
     private Integer queueId;
     private Integer batchSize;
 
@@ -241,12 +241,11 @@ public class DefaultMqConsumer {
      */
     public void fetchBrokerAddress() {
         String fetchBrokerAddressMsgId = UUID.randomUUID().toString();
-        PullBrokerIpDTO pullBrokerIpDTO = new PullBrokerIpDTO();
+        PullBrokerIpReqDTO pullBrokerIpDTO = new PullBrokerIpReqDTO();
         if (getBrokerClusterGroup() != null) {
             pullBrokerIpDTO.setBrokerClusterGroup(brokerClusterGroup);
-        } else {
-            pullBrokerIpDTO.setRole(brokerRole);
         }
+        pullBrokerIpDTO.setRole(brokerRole);
         pullBrokerIpDTO.setMsgId(fetchBrokerAddressMsgId);
         TcpMsg heartBeatResponse = nameServerNettyRemoteClient.sendSyncMsg(new TcpMsg(NameServerEventCode.PULL_BROKER_IP_LIST.getCode(), JSON.toJSONBytes(pullBrokerIpDTO)), fetchBrokerAddressMsgId);
         PullBrokerIpRespDTO pullBrokerIpRespDTO = JSON.parseObject(heartBeatResponse.getBody(), PullBrokerIpRespDTO.class);

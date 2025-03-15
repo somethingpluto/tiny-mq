@@ -20,7 +20,6 @@ import java.util.Map;
 
 
 public class ConsumeMsgAckListener implements Listener<ConsumeMsgAckEvent> {
-
     private final Logger logger = LoggerFactory.getLogger(ConsumeMsgAckListener.class);
 
     @Override
@@ -36,15 +35,13 @@ public class ConsumeMsgAckListener implements Listener<ConsumeMsgAckEvent> {
         if (eagleMqTopicModel == null) {
             //topic不存在，ack失败
             consumeMsgAckRespDTO.setAckStatus(AckStatus.FAIL.getCode());
-            event.getChannelHandlerContext().writeAndFlush(new TcpMsg(BrokerResponseCode.BROKER_UPDATE_CONSUME_OFFSET_RESP.getCode(),
-                    JSON.toJSONBytes(consumeMsgAckRespDTO)));
+            event.getChannelHandlerContext().writeAndFlush(new TcpMsg(BrokerResponseCode.BROKER_UPDATE_CONSUME_OFFSET_RESP.getCode(), JSON.toJSONBytes(consumeMsgAckRespDTO)));
             return;
         }
         Map<String, List<ConsumerInstance>> consumerInstanceMap = CommonCache.getConsumeHoldMap().get(topic);
         if (consumerInstanceMap == null || consumerInstanceMap.isEmpty()) {
             consumeMsgAckRespDTO.setAckStatus(AckStatus.FAIL.getCode());
-            event.getChannelHandlerContext().writeAndFlush(new TcpMsg(BrokerResponseCode.BROKER_UPDATE_CONSUME_OFFSET_RESP.getCode(),
-                    JSON.toJSONBytes(consumeMsgAckRespDTO)));
+            event.getChannelHandlerContext().writeAndFlush(new TcpMsg(BrokerResponseCode.BROKER_UPDATE_CONSUME_OFFSET_RESP.getCode(), JSON.toJSONBytes(consumeMsgAckRespDTO)));
             return;
         }
         List<ConsumerInstance> consumeGroupInstances = consumerInstanceMap.get(consumeGroup);
@@ -55,16 +52,13 @@ public class ConsumeMsgAckListener implements Listener<ConsumeMsgAckEvent> {
             return;
         }
         String currentConsumeReqId = consumeMsgAckReqDTO.getIp() + ":" + consumeMsgAckReqDTO.getPort();
-        ConsumerInstance matchInstance = consumeGroupInstances.stream().filter(item -> {
-            return item.getConsumerReqId().equals(currentConsumeReqId);
-        }).findAny().orElse(null);
+        ConsumerInstance matchInstance = consumeGroupInstances.stream().filter(item -> item.getConsumerReqId().equals(currentConsumeReqId)).findAny().orElse(null);
         if (matchInstance == null) {
             consumeMsgAckRespDTO.setAckStatus(AckStatus.FAIL.getCode());
             event.getChannelHandlerContext().writeAndFlush(new TcpMsg(BrokerResponseCode.BROKER_UPDATE_CONSUME_OFFSET_RESP.getCode(),
                     JSON.toJSONBytes(consumeMsgAckRespDTO)));
             return;
         }
-        //数据的ack，到底应该客户端传递offset过来好 还是在服务端计算offset值好？
         for (int i = 0; i < ackCount; i++) {
             CommonCache.getConsumeQueueConsumeHandler().ack(topic, consumeGroup, queueId);
         }

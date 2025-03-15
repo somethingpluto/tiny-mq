@@ -28,7 +28,6 @@ public class PushMsgListener implements Listener<PushMsgEvent> {
     public void onReceive(PushMsgEvent event) throws Exception {
         MessageDTO messageDTO = event.getMessageDTO();
         CommonCache.getCommitLogAppendHandler().appendMsg(messageDTO);
-        // 集群同步
         boolean isAsyncSend = messageDTO.getSendWay() == MessageSendWay.ASYNC.getCode();
         String brokerMode = CommonCache.getGlobalProperties().getBrokerClusterMode();
         String brokerRole = CommonCache.getGlobalProperties().getBrokerClusterRole();

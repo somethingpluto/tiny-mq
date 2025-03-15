@@ -3,11 +3,11 @@ package org.tiny.mq.nameserver.event.spi.listener;
 import com.alibaba.fastjson.JSON;
 import org.tiny.mq.common.coder.TcpMsg;
 import org.tiny.mq.common.dto.PullBrokerIpRespDTO;
+import org.tiny.mq.common.enums.BrokerRegistryEnum;
 import org.tiny.mq.common.enums.NameServerResponseCode;
 import org.tiny.mq.common.enums.RegistryTypeEnum;
 import org.tiny.mq.common.event.Listener;
 import org.tiny.mq.nameserver.common.CommonCache;
-import org.tiny.mq.nameserver.enums.PullBrokerIpRoleEnum;
 import org.tiny.mq.nameserver.event.model.PullBrokerIpEvent;
 import org.tiny.mq.nameserver.store.ServiceInstance;
 
@@ -33,12 +33,14 @@ public class PullBrokerIpListener implements Listener<PullBrokerIpEvent> {
                 String group = (String) brokerAttrs.getOrDefault("group", "");
                 //先命中集群组，再根据角色进行判断
                 if (group.equals(event.getBrokerClusterGroup())) {
-                    String role = (String) brokerAttrs.get("role");
-                    if (PullBrokerIpRoleEnum.MASTER.getCode().equals(pullRole) && PullBrokerIpRoleEnum.MASTER.getCode().equals(role)) {
+                    String itemRole = (String) brokerAttrs.get("role");
+                    if (itemRole.equals(BrokerRegistryEnum.MASTER.getDesc()) && pullRole.equals(itemRole)) {
                         masterAddressList.add(serviceInstance.getIp() + ":" + serviceInstance.getPort());
-                    } else if (PullBrokerIpRoleEnum.SLAVE.getCode().equals(pullRole) && PullBrokerIpRoleEnum.SLAVE.getCode().equals(role)) {
+                    }
+                    if (itemRole.equals(BrokerRegistryEnum.SLAVE.getDesc()) && pullRole.equals(itemRole)) {
                         slaveAddressList.add(serviceInstance.getIp() + ":" + serviceInstance.getPort());
-                    } else if (PullBrokerIpRoleEnum.SINGLE.getCode().equals(pullRole) && PullBrokerIpRoleEnum.SINGLE.getCode().equals(role)) {
+                    }
+                    if (itemRole.equals(BrokerRegistryEnum.SINGLE.getDesc())) {
                         addressList.add(serviceInstance.getIp() + ":" + serviceInstance.getPort());
                     }
                 }

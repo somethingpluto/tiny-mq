@@ -171,7 +171,7 @@ public class DefaultProducerImpl implements Producer {
      */
     public void fetchBrokerAddress() {
         String fetchBrokerAddressMsgId = UUID.randomUUID().toString();
-        PullBrokerIpDTO pullBrokerIpDTO = new PullBrokerIpDTO();
+        PullBrokerIpReqDTO pullBrokerIpDTO = new PullBrokerIpReqDTO();
         if (getBrokerClusterGroup() != null) {
             this.setBrokerRole("master");
             pullBrokerIpDTO.setBrokerClusterGroup(brokerClusterGroup);

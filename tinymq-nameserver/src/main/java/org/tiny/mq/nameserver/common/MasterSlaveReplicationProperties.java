@@ -7,7 +7,6 @@ public class MasterSlaveReplicationProperties {
 
     private String role;
 
-
     private String type;
 
     private Integer port;

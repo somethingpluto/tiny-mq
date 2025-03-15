@@ -17,6 +17,8 @@ public class ConsumeMsgRetryListener implements Listener<ConsumeMsgRetryEvent> {
     public void onReceive(ConsumeMsgRetryEvent event) throws Exception {
         ConsumeMsgRetryReqDTO consumeMsgLaterReqDTO = event.getConsumeMsgLaterReqDTO();
         logger.info("consume msg retry handler");
+
+
         ConsumeMsgRetryRespDTO consumeMsgRetryRespDTO = new ConsumeMsgRetryRespDTO();
         TcpMsg tcpMsg = new TcpMsg(BrokerResponseCode.CONSUME_MSG_RETRY_RESP.getCode(), JSON.toJSONBytes(consumeMsgRetryRespDTO));
         event.getChannelHandlerContext().writeAndFlush(tcpMsg);
