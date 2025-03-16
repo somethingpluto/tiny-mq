@@ -143,32 +143,25 @@ public class DefaultProducerImpl implements Producer {
     }
 
     private void startHeartBeatTask() {
-        Thread heartBeatTask = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (true) {
-                    try {
-                        TimeUnit.SECONDS.sleep(3);
-                        logger.info("执行心跳数据发送");
-                        String heartBeatMsgId = UUID.randomUUID().toString();
-                        HeartBeatDTO heartBeatDTO = new HeartBeatDTO();
-                        heartBeatDTO.setMsgId(heartBeatMsgId);
-                        TcpMsg heartBeatResponse = nameServerNettyRemoteClient.sendSyncMsg(new TcpMsg(NameServerEventCode.HEART_BEAT.getCode(), JSON.toJSONBytes(heartBeatDTO)), heartBeatMsgId);
-                        logger.info("heart beat response data is :{}", JSON.parseObject(heartBeatResponse.getBody()));
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+        Thread heartBeatTask = new Thread(() -> {
+            while (true) {
+                try {
+                    TimeUnit.SECONDS.sleep(3);
+                    logger.info("执行心跳数据发送");
+                    String heartBeatMsgId = UUID.randomUUID().toString();
+                    HeartBeatDTO heartBeatDTO = new HeartBeatDTO();
+                    heartBeatDTO.setMsgId(heartBeatMsgId);
+                    TcpMsg heartBeatResponse = nameServerNettyRemoteClient.sendSyncMsg(new TcpMsg(NameServerEventCode.HEART_BEAT.getCode(), JSON.toJSONBytes(heartBeatDTO)), heartBeatMsgId);
+                    logger.info("heart beat response data is :{}", JSON.parseObject(heartBeatResponse.getBody()));
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
         }, "heart-beat-task");
         heartBeatTask.start();
     }
 
-    /**
-     * 拉broker地址
-     * <p>
-     * 主从架构 -》从节点数据 / 主节点数据（两套ip都应该保存下来）
-     */
+
     public void fetchBrokerAddress() {
         String fetchBrokerAddressMsgId = UUID.randomUUID().toString();
         PullBrokerIpReqDTO pullBrokerIpDTO = new PullBrokerIpReqDTO();

@@ -64,7 +64,7 @@ public class TestConsumerSuite {
         consumer.setNsPort(9093);
         consumer.setNsPwd("tiny_mq");
         consumer.setNsUser("tiny_mq");
-        consumer.setBrokerRole("master");
+        consumer.setBrokerRole("single");
         consumer.setTopic("order_enter");
         consumer.setConsumeGroup("tiny_mq_test_group");
         consumer.setBrokerClusterGroup("tiny_mq_test_group");

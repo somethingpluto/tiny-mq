@@ -34,7 +34,7 @@ public class DefaultMqConsumer {
     private String nsPwd;
     private String topic;
     private String consumeGroup;
-    private String brokerRole = "master";
+    private String brokerRole = "single";
     private Integer queueId;
     private Integer batchSize;
 

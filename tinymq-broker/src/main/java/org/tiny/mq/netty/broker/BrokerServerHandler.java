@@ -51,16 +51,21 @@ public class BrokerServerHandler extends SimpleChannelInboundHandler {
         } else if (BrokerEventCode.START_SYNC_MSG.getCode() == code) {
             event = handleStartSyncMsgEvent(body, channelHandlerContext);
         } else if (BrokerResponseCode.SLAVE_BROKER_ACCEPT_PUSH_MSG_RESP.getCode() == code) {
-            SendMessageToBrokerResponseDTO sendMessageToBrokerResponseDTO = JSON.parseObject(body, SendMessageToBrokerResponseDTO.class);
-            SyncFuture syncFuture = BrokerServerSyncFutureManager.get(sendMessageToBrokerResponseDTO.getMsgId());
-            if (syncFuture != null) {
-                syncFuture.setResponse(tcpMsg);
-            }
+            handleSlaveBrokerAcceptPushMsgResponse(body, channelHandlerContext);
         } else if (BrokerEventCode.CONSUME_LATER.getCode() == code) {
             event = handleConsumeMsgRetry(body, channelHandlerContext);
         }
         if (event != null) {
             eventBus.publish(event);
+        }
+    }
+
+
+    private void handleSlaveBrokerAcceptPushMsgResponse(byte[] body, ChannelHandlerContext channelHandlerContext) {
+        SendMessageToBrokerResponseDTO sendMessageToBrokerResponseDTO = JSON.parseObject(body, SendMessageToBrokerResponseDTO.class);
+        SyncFuture syncFuture = BrokerServerSyncFutureManager.get(sendMessageToBrokerResponseDTO.getMsgId());
+        if (syncFuture != null) {
+            syncFuture.setResponse(new TcpMsg(BrokerResponseCode.SLAVE_BROKER_ACCEPT_PUSH_MSG_RESP.getCode(), body));
         }
     }
 

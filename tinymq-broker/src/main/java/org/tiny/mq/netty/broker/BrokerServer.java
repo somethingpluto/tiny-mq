@@ -17,9 +17,12 @@ import org.tiny.mq.common.constants.TcpConstants;
 import org.tiny.mq.common.event.EventBus;
 
 
+/**
+ * Broker 服务端
+ */
 public class BrokerServer {
 
-    private static Logger logger = LoggerFactory.getLogger(BrokerServer.class);
+    private static final Logger logger = LoggerFactory.getLogger(BrokerServer.class);
 
     private int port;
 

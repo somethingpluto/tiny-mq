@@ -13,7 +13,7 @@ import org.tiny.mq.common.enums.NameServerResponseCode;
 @ChannelHandler.Sharable
 public class NameServerRespChannelHandler extends SimpleChannelInboundHandler {
 
-    private final Logger logger = LoggerFactory.getLogger(NameServerRespChannelHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(NameServerRespChannelHandler.class);
 
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object msg) throws Exception {

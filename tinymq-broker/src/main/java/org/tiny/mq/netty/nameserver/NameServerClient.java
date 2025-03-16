@@ -1,10 +1,6 @@
 package org.tiny.mq.netty.nameserver;
 
 import com.alibaba.fastjson.JSON;
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.internal.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,11 +22,6 @@ import java.util.UUID;
 public class NameServerClient {
 
     private final Logger logger = LoggerFactory.getLogger(NameServerClient.class);
-
-    private EventLoopGroup clientGroup = new NioEventLoopGroup();
-    private Bootstrap bootstrap = new Bootstrap();
-    private Channel channel;
-    private String DEFAULT_NAMESERVER_IP = "127.0.0.1";
 
     private NameServerNettyRemoteClient nameServerNettyRemoteClient;
 

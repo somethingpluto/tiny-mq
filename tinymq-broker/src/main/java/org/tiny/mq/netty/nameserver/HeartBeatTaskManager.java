@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class HeartBeatTaskManager {
 
     private AtomicInteger flag = new AtomicInteger(0);
-    private static Logger logger = LoggerFactory.getLogger(HeartBeatTaskManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(HeartBeatTaskManager.class);
 
     //开启心跳传输任务
     public void startTask() {
@@ -31,7 +31,7 @@ public class HeartBeatTaskManager {
     }
 
 
-    private class HeartBeatRequestTask implements Runnable {
+    private static class HeartBeatRequestTask implements Runnable {
         @Override
         public void run() {
             while (true) {
