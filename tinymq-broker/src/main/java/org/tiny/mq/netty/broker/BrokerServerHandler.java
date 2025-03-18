@@ -52,7 +52,7 @@ public class BrokerServerHandler extends SimpleChannelInboundHandler {
             event = handleStartSyncMsgEvent(body, channelHandlerContext);
         } else if (BrokerResponseCode.SLAVE_BROKER_ACCEPT_PUSH_MSG_RESP.getCode() == code) {
             handleSlaveBrokerAcceptPushMsgResponse(body, channelHandlerContext);
-        } else if (BrokerEventCode.CONSUME_LATER.getCode() == code) {
+        } else if (BrokerEventCode.CONSUME_RETRY.getCode() == code) {
             event = handleConsumeMsgRetry(body, channelHandlerContext);
         }
         if (event != null) {

@@ -8,7 +8,7 @@ public enum BrokerEventCode {
     CONSUME_SUCCESS_MSG(1003, "消费成功"),
     CREATE_TOPIC(1004, "创建topic"),
     START_SYNC_MSG(1005, "开启同步服务"),
-    CONSUME_LATER(1006, "");
+    CONSUME_RETRY(1006, "");
 
     int code;
     String desc;

@@ -138,7 +138,7 @@ public class DefaultMqConsumer {
                                     consumeMsgLaterReqDTO.setQueueId(queueId);
                                     consumeMsgLaterReqDTO.setConsumeGroup(consumeGroup);
                                     consumeMsgLaterReqDTO.setMsgId(consuerLaterMsgId);
-                                    TcpMsg tcpMsg = new TcpMsg(BrokerEventCode.CONSUME_LATER.getCode(), JSON.toJSONBytes(consumeMsgLaterReqDTO));
+                                    TcpMsg tcpMsg = new TcpMsg(BrokerEventCode.CONSUME_RETRY.getCode(), JSON.toJSONBytes(consumeMsgLaterReqDTO));
                                     TcpMsg consumeLaterResp = brokerNettyRemoteClient.sendSyncMsg(tcpMsg, consuerLaterMsgId);
                                     logger.info("consume later resp:{}", JSON.toJSONString(consumeLaterResp));
                                 }

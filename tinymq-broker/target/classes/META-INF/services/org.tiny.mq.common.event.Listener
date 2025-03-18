@@ -3,3 +3,4 @@ org.tiny.mq.event.spi.listener.ConsumeMsgListener
 org.tiny.mq.event.spi.listener.PushMsgListener
 org.tiny.mq.event.spi.listener.CreateTopicListener
 org.tiny.mq.event.spi.listener.StartSyncListener
+org.tiny.mq.event.spi.listener.ConsumeMsgRetryListener

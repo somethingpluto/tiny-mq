@@ -8,6 +8,15 @@ public class MessageDTO {
 
     private int sendWay;
     private byte[] body;
+    private boolean isRetry;
+
+    public boolean isRetry() {
+        return isRetry;
+    }
+
+    public void setRetry(boolean retry) {
+        isRetry = retry;
+    }
 
     public int getSendWay() {
         return sendWay;

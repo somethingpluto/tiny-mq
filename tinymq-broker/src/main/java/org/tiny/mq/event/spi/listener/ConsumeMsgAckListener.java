@@ -62,6 +62,9 @@ public class ConsumeMsgAckListener implements Listener<ConsumeMsgAckEvent> {
         for (int i = 0; i < ackCount; i++) {
             CommonCache.getConsumeQueueConsumeHandler().ack(topic, consumeGroup, queueId);
         }
+
+        // 将消费失败的数据重新推送到一条队列上
+
         logger.info("broker receive offset value ,topic is {},consumeGroup is {},queueId is {},ackCount is {}",
                 topic, consumeGroup, queueId, ackCount);
         consumeMsgAckRespDTO.setAckStatus(AckStatus.SUCCESS.getCode());

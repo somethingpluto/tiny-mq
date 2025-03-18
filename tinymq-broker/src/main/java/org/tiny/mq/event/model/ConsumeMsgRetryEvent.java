@@ -4,13 +4,13 @@ import org.tiny.mq.common.dto.ConsumeMsgRetryReqDTO;
 import org.tiny.mq.common.event.model.Event;
 
 public class ConsumeMsgRetryEvent extends Event {
-    private ConsumeMsgRetryReqDTO consumeMsgLaterReqDTO;
+    private ConsumeMsgRetryReqDTO consumeMsgRetryReqDTO;
 
-    public ConsumeMsgRetryReqDTO getConsumeMsgLaterReqDTO() {
-        return consumeMsgLaterReqDTO;
+    public ConsumeMsgRetryReqDTO getConsumeMsgRetryReqDTO() {
+        return consumeMsgRetryReqDTO;
     }
 
-    public void setConsumeMsgLaterReqDTO(ConsumeMsgRetryReqDTO consumeMsgLaterReqDTO) {
-        this.consumeMsgLaterReqDTO = consumeMsgLaterReqDTO;
+    public void setConsumeMsgRetryReqDTO(ConsumeMsgRetryReqDTO consumeMsgRetryReqDTO) {
+        this.consumeMsgRetryReqDTO = consumeMsgRetryReqDTO;
     }
 }
