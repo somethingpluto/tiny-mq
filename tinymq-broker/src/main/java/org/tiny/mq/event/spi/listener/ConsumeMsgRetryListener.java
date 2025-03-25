@@ -100,7 +100,8 @@ public class ConsumeMsgRetryListener implements Listener<ConsumeMsgRetryEvent> {
             messageDTO.setBody(JSON.toJSONBytes(messageRetryDTO));
             messageDTO.setRetry(true);
             CommonCache.getCommitLogAppendHandler().appendMsg(messageDTO);
-            
+            // TODO: this part error
+            return;
         }
 
         TcpMsg tcpMsg = new TcpMsg(BrokerResponseCode.CONSUME_MSG_RETRY_RESP.getCode(), JSON.toJSONBytes(consumeMsgRetryRespDTO));
