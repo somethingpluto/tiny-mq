@@ -44,6 +44,7 @@ public class TimeWheelModelManager {
             if (CollectionUtils.isNotEmpty(timeWheelSlotModelList)) {
                 TimeWheelEvent timeWheelEvent = new TimeWheelEvent();
                 timeWheelEvent.setTimeWheelSlotModelList(timeWheelSlotModelList);
+                logger.info("data:{}", timeWheelSlotModelList);
                 eventBus.publish(timeWheelEvent);
             }
             // 将要执行的任务发生出去后
@@ -75,7 +76,7 @@ public class TimeWheelModelManager {
                     DelayMessageDTO delayMessageDTO = new DelayMessageDTO();
                     delayMessageDTO.setData(timeWheelSlotModel.getData());
                     delayMessageDTO.setDelay(remainSecond);
-                    delayMessageDTO.setSlotStoreTypeEnum(delayMessageDTO.getSlotStoreTypeEnum());
+                    delayMessageDTO.setSlotStoreTypeEnum(SlotStoreTypeEnum.MESSAGE_RETRY_DTO);
                     add(delayMessageDTO);
                 } else { // 这个slot需要处理的
                     needHandleList.add(timeWheelSlotModel);
@@ -109,6 +110,10 @@ public class TimeWheelModelManager {
                 secondsLock.lock();
                 int nextSlot = secondsTimeWheelModel.countNextSlot(delay);
                 logger.info("current second slot:{} next slot:{}", secondsTimeWheelModel.getCurrent(), nextSlot);
+                TimeWheelSlotListModel timeWheelSlotListModel = secondsTimeWheelModel.getTimeWheelSlotListModels()[nextSlot];
+                List<TimeWheelSlotModel> timeWheelSlotModelList = timeWheelSlotListModel.getTimeWheelSlotModelList();
+                TimeWheelSlotModel timeWheelSlotModel = new TimeWheelSlotModel(delay, delayMessageDTO, delayMessageDTO.getSlotStoreTypeEnum().getClazz());
+                timeWheelSlotModelList.add(timeWheelSlotModel);
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
