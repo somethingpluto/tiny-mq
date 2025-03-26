@@ -12,7 +12,7 @@ public class ConsumeMsgRespDTO {
     /**
      * 拉数据返回内容
      */
-    private List<byte[]> commitLogContentList;
+    private List<ConsumeMsgCommitLogDTO> commitLogContentList;
 
 
     public Integer getQueueId() {
@@ -23,11 +23,11 @@ public class ConsumeMsgRespDTO {
         this.queueId = queueId;
     }
 
-    public List<byte[]> getCommitLogContentList() {
+    public List<ConsumeMsgCommitLogDTO> getCommitLogContentList() {
         return commitLogContentList;
     }
 
-    public void setCommitLogContentList(List<byte[]> commitLogContentList) {
+    public void setCommitLogContentList(List<ConsumeMsgCommitLogDTO> commitLogContentList) {
         this.commitLogContentList = commitLogContentList;
     }
 }

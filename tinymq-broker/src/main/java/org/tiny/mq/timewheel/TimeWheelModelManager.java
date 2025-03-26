@@ -1,9 +1,14 @@
 package org.tiny.mq.timewheel;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tiny.mq.common.event.EventBus;
+import org.tiny.mq.event.model.TimeWheelEvent;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class TimeWheelModelManager {
@@ -29,6 +34,73 @@ public class TimeWheelModelManager {
         this.eventBus.init();
     }
 
+    private void doSecondsTimeWheelExecute() {
+        try {
+            secondsLock.lock();
+            logger.info("doScan Second slot:{}", secondsTimeWheelModel.getCurrent());
+            int current = secondsTimeWheelModel.getCurrent();
+            TimeWheelSlotListModel timeWheelSlotListModel = secondsTimeWheelModel.getTimeWheelSlotListModels()[current];
+            List<TimeWheelSlotModel> timeWheelSlotModelList = timeWheelSlotListModel.getTimeWheelSlotModelList();
+            if (CollectionUtils.isNotEmpty(timeWheelSlotModelList)) {
+                TimeWheelEvent timeWheelEvent = new TimeWheelEvent();
+                timeWheelEvent.setTimeWheelSlotModelList(timeWheelSlotModelList);
+                eventBus.publish(timeWheelEvent);
+            }
+            // 将要执行的任务发生出去后
+            timeWheelSlotListModel.getTimeWheelSlotModelList().clear();
+            if (current == secondsTimeWheelModel.getTimeWheelSlotListModels().length - 1) { // 刚好走到最后的位置
+                current = 0;
+            } else {
+                current++;
+            }
+            secondsTimeWheelModel.setCurrent(current);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            secondsLock.unlock();
+        }
+    }
+
+    private void doMinutesTimeWheelExecute() {
+        try {
+            minutesLock.lock();
+            logger.info("doScan Minutes slot:{}", minutesTimeWheelModel.getCurrent());
+            int current = minutesTimeWheelModel.getCurrent();
+            TimeWheelSlotListModel timeWheelSlotListModel = minutesTimeWheelModel.getTimeWheelSlotListModels()[current];
+            List<TimeWheelSlotModel> timeWheelSlotModelList = timeWheelSlotListModel.getTimeWheelSlotModelList();
+            List<TimeWheelSlotModel> needHandleList = new ArrayList<>();
+            for (TimeWheelSlotModel timeWheelSlotModel : timeWheelSlotModelList) {
+                int remainSecond = timeWheelSlotModel.getDelaySeconds() % 60;
+                if (remainSecond > 0) {
+                    DelayMessageDTO delayMessageDTO = new DelayMessageDTO();
+                    delayMessageDTO.setData(timeWheelSlotModel.getData());
+                    delayMessageDTO.setDelay(remainSecond);
+                    delayMessageDTO.setSlotStoreTypeEnum(delayMessageDTO.getSlotStoreTypeEnum());
+                    add(delayMessageDTO);
+                } else { // 这个slot需要处理的
+                    needHandleList.add(timeWheelSlotModel);
+                }
+            }
+            // 将所有要处理的发送出去
+            if (CollectionUtils.isNotEmpty(needHandleList)) {
+                TimeWheelEvent timeWheelEvent = new TimeWheelEvent();
+                timeWheelEvent.setTimeWheelSlotModelList(timeWheelSlotModelList);
+                eventBus.publish(timeWheelEvent);
+            }
+            timeWheelSlotListModel.getTimeWheelSlotModelList().clear();
+            if (current == minutesTimeWheelModel.getTimeWheelSlotListModels().length - 1) {
+                current = 0;
+            } else {
+                current = current + 1;
+            }
+            minutesTimeWheelModel.setCurrent(current);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            minutesLock.unlock();
+        }
+    }
+
     public void add(DelayMessageDTO delayMessageDTO) {
         int delay = delayMessageDTO.getDelay();
         int min = delay / 60;
@@ -42,7 +114,41 @@ public class TimeWheelModelManager {
             } finally {
                 secondsLock.unlock();
             }
+        } else if (min > 0) {
+            try {
+                minutesLock.lock();
+                int nextSlot = minutesTimeWheelModel.countNextSlot(min);
+                logger.info("current minutes slot:{},next slot:{}", minutesTimeWheelModel.getCurrent(), nextSlot);
+                TimeWheelSlotListModel timeWheelSlotListModel = minutesTimeWheelModel.getTimeWheelSlotListModels()[nextSlot];
+                List<TimeWheelSlotModel> timeWheelSlotModelList = timeWheelSlotListModel.getTimeWheelSlotModelList();
+                TimeWheelSlotModel timeWheelSlotModel = new TimeWheelSlotModel(delay, delayMessageDTO, delayMessageDTO.getSlotStoreTypeEnum().getClazz());
+                timeWheelSlotModelList.add(timeWheelSlotModel);
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                minutesLock.unlock();
+            }
         }
+    }
+
+    public void doScanTask() {
+        Thread scanThread = new Thread(() -> {
+            logger.info("start scan slot task");
+            while (true) {
+                try {
+                    doSecondsTimeWheelExecute();
+                    if (executeSeconds % 60 == 0) {
+                        doMinutesTimeWheelExecute();
+                    }
+                    TimeUnit.SECONDS.sleep(1);
+                    executeSeconds++;
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+        scanThread.setName("scan-slot-task");
+        scanThread.start();
     }
 
     private TimeWheelSlotListModel[] buildTimeWheelSlotListModel(int count) {

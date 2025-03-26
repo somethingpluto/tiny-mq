@@ -31,6 +31,7 @@ public class CreateTopicListener implements Listener<CreateTopicEvent> {
 
     @Override
     public void onReceive(CreateTopicEvent event) throws Exception {
+        logger.info("receive create topic event:{}", event.toString());
         CreateTopicReqDTO createTopicReqDTO = event.getCreateTopicReqDTO();
         String topicName = createTopicReqDTO.getTopicName();
         Integer queueSize = createTopicReqDTO.getQueueSize();
@@ -110,11 +111,5 @@ public class CreateTopicListener implements Listener<CreateTopicEvent> {
         }
         eagleMqTopicModel.setQueueList(queueModelList);
         CommonCache.getEagleMqTopicModelList().add(eagleMqTopicModel);
-    }
-
-    public static void main(String[] args) throws IOException {
-        CommonCache.getGlobalProperties().setEagleMqHome("E:\\code\\code_back\\Java_project\\tiny-frame\\tinymq\\broker");
-//        createTopicFile("order_topic");
-        createTopicQueue("order_topic", 3);
     }
 }

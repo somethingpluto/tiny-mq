@@ -26,6 +26,7 @@ public class PushMsgListener implements Listener<PushMsgEvent> {
 
     @Override
     public void onReceive(PushMsgEvent event) throws Exception {
+        logger.info("push msg handler,event:{}", JSON.toJSONString(event));
         MessageDTO messageDTO = event.getMessageDTO();
         CommonCache.getCommitLogAppendHandler().appendMsg(messageDTO);
         boolean isAsyncSend = messageDTO.getSendWay() == MessageSendWay.ASYNC.getCode();

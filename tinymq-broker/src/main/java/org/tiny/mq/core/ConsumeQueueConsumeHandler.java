@@ -2,6 +2,7 @@ package org.tiny.mq.core;
 
 
 import org.tiny.mq.cache.CommonCache;
+import org.tiny.mq.common.dto.ConsumeMsgCommitLogDTO;
 import org.tiny.mq.model.*;
 import org.tiny.mq.utils.AckMessageLock;
 import org.tiny.mq.utils.UnfailReentrantLock;
@@ -16,12 +17,8 @@ public class ConsumeQueueConsumeHandler {
 
     public AckMessageLock ackMessageLock = new UnfailReentrantLock();
 
-    /**
-     * 读取当前最新N条consumeQueue的消息内容,并且返回commitLog原始数据
-     *
-     * @return
-     */
-    public List<byte[]> consume(ConsumeQueueConsumeReqModel consumeQueueConsumeReqModel) {
+
+    public List<ConsumeMsgCommitLogDTO> consume(ConsumeQueueConsumeReqModel consumeQueueConsumeReqModel) {
         String topic = consumeQueueConsumeReqModel.getTopic();
         //1.检查参数合法性
         //2.获取当前匹配的队列的最新的consumeQueue的offset是多少
@@ -64,15 +61,15 @@ public class ConsumeQueueConsumeHandler {
         ConsumeQueueMMapFileModel consumeQueueMMapFileModel = consumeQueueOffsetModels.get(queueId);
         //一次读取多条consumeQueue的数据内容
         List<byte[]> consumeQueueContentList = consumeQueueMMapFileModel.readContent(consumeQueueOffset, batchSize);
-        List<byte[]> commitLogBodyContentList = new ArrayList<>();
+        List<ConsumeMsgCommitLogDTO> commitLogBodyContentList = new ArrayList<>();
         for (byte[] content : consumeQueueContentList) {
             ConsumeQueueDetailModel consumeQueueDetailModel = new ConsumeQueueDetailModel();
             consumeQueueDetailModel.buildFromBytes(content);
             CommitLogMMapFileModel commitLogMMapFileModel = CommonCache.getCommitLogMMapFileModelManager().get(topic);
-            byte[] commitLogContent = commitLogMMapFileModel.readContent(consumeQueueDetailModel.getMsgIndex(), consumeQueueDetailModel.getMsgLength());
-            commitLogBodyContentList.add(commitLogContent);
-        }
+            ConsumeMsgCommitLogDTO consumeMsgCommitLogDTO = commitLogMMapFileModel.readContent(consumeQueueDetailModel.getMsgIndex(), consumeQueueDetailModel.getMsgLength());
+            commitLogBodyContentList.add(consumeMsgCommitLogDTO);
 
+        }
         return commitLogBodyContentList;
     }
 

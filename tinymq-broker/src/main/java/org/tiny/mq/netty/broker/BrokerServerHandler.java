@@ -124,7 +124,7 @@ public class BrokerServerHandler extends SimpleChannelInboundHandler {
         ConsumeMsgRetryReqDTO consumeMsgRetryReqDTO = JSON.parseObject(body, ConsumeMsgRetryReqDTO.class);
         ConsumeMsgRetryEvent consumeMsgRetryEvent = new ConsumeMsgRetryEvent();
         consumeMsgRetryEvent.setMsgId(consumeMsgRetryReqDTO.getMsgId());
-        consumeMsgRetryEvent.setConsumeMsgLaterReqDTO(consumeMsgRetryReqDTO);
+        consumeMsgRetryEvent.setConsumeMsgRetryReqDTO(consumeMsgRetryReqDTO);
         consumeMsgRetryEvent.setChannelHandlerContext(channelHandlerContext);
         return consumeMsgRetryEvent;
     }

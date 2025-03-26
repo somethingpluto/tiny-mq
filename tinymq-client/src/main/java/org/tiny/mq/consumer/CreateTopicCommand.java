@@ -17,8 +17,8 @@ public class CreateTopicCommand {
         CreateTopicReqDTO createTopicReqDTO = new CreateTopicReqDTO();
         String msgId = UUID.randomUUID().toString();
         createTopicReqDTO.setMsgId(msgId);
-        createTopicReqDTO.setTopicName("user_all_info");
-        createTopicReqDTO.setQueueSize(10);
+        createTopicReqDTO.setTopicName("retry");
+        createTopicReqDTO.setQueueSize(1);
         brokerNettyRemoteClient.sendAsyncMsg(new TcpMsg(BrokerEventCode.CREATE_TOPIC.getCode(), JSON.toJSONBytes(createTopicReqDTO)));
     }
 }

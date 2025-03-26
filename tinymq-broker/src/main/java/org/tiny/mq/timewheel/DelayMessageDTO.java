@@ -14,8 +14,6 @@ public class DelayMessageDTO {
     public DelayMessageDTO() {
     }
 
-    ;
-
     public Object getData() {
         return data;
     }

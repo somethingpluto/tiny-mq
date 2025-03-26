@@ -1,11 +1,13 @@
 package org.tiny.mq.consumer;
 
 
+import org.tiny.mq.common.dto.ConsumeMsgCommitLogDTO;
+
 public class ConsumeMessage {
 
     private int queueId;
 
-    private byte[] body;
+    private ConsumeMsgCommitLogDTO consumeMsgCommitLogDTO;
 
     public int getQueueId() {
         return queueId;
@@ -15,11 +17,11 @@ public class ConsumeMessage {
         this.queueId = queueId;
     }
 
-    public byte[] getBody() {
-        return body;
+    public ConsumeMsgCommitLogDTO getConsumeMsgCommitLogDTO() {
+        return consumeMsgCommitLogDTO;
     }
 
-    public void setBody(byte[] body) {
-        this.body = body;
+    public void setConsumeMsgCommitLogDTO(ConsumeMsgCommitLogDTO consumeMsgCommitLogDTO) {
+        this.consumeMsgCommitLogDTO = consumeMsgCommitLogDTO;
     }
 }

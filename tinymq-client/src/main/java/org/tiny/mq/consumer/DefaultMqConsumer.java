@@ -100,15 +100,14 @@ public class DefaultMqConsumer {
                         boolean brokerHasData = false;
                         if (CollectionUtils.isNotEmpty(consumeMsgRespDTOS)) {
                             for (ConsumeMsgRespDTO consumeMsgRespDTO : consumeMsgRespDTOS) {
-                                List<byte[]> commitLogBodyList = consumeMsgRespDTO.getCommitLogContentList();
+                                List<ConsumeMsgCommitLogDTO> commitLogBodyList = consumeMsgRespDTO.getCommitLogContentList();
                                 if (CollectionUtils.isEmpty(commitLogBodyList)) {
                                     continue;
                                 }
                                 List<ConsumeMessage> consumeMessages = new ArrayList<>();
-                                for (byte[] bytes : commitLogBodyList) {
+                                for (ConsumeMsgCommitLogDTO consumeMsgCommitLogDTO : commitLogBodyList) {
                                     ConsumeMessage consumeMessage = new ConsumeMessage();
-                                    consumeMessage.setBody(bytes);
-                                    consumeMessage.setQueueId(consumeMsgRespDTO.getQueueId());
+                                    consumeMessage.setConsumeMsgCommitLogDTO(consumeMsgCommitLogDTO);
                                     consumeMessages.add(consumeMessage);
                                 }
                                 brokerHasData = true;
@@ -131,16 +130,24 @@ public class DefaultMqConsumer {
                                         logger.error("consume ack fail!");
                                     }
                                 } else if (consumeResult.getConsumeResultStatus() == ConsumeResultStatus.CONSUME_LATER.getCode()) {
-                                    String consuerLaterMsgId = UUID.randomUUID().toString();
-                                    // 消费失败 后面再消费
-                                    ConsumeMsgRetryReqDTO consumeMsgLaterReqDTO = new ConsumeMsgRetryReqDTO();
-                                    consumeMsgLaterReqDTO.setTopic(topic);
-                                    consumeMsgLaterReqDTO.setQueueId(queueId);
-                                    consumeMsgLaterReqDTO.setConsumeGroup(consumeGroup);
-                                    consumeMsgLaterReqDTO.setMsgId(consuerLaterMsgId);
-                                    TcpMsg tcpMsg = new TcpMsg(BrokerEventCode.CONSUME_RETRY.getCode(), JSON.toJSONBytes(consumeMsgLaterReqDTO));
-                                    TcpMsg consumeLaterResp = brokerNettyRemoteClient.sendSyncMsg(tcpMsg, consuerLaterMsgId);
-                                    logger.info("consume later resp:{}", JSON.toJSONString(consumeLaterResp));
+                                    this.setQueueId(consumeMsgRespDTO.getQueueId());
+                                    List<Long> commitLogOffsetList = commitLogBodyList.stream().map(ConsumeMsgCommitLogDTO::getCommitLogOffset).collect(Collectors.toList());
+                                    List<Integer> commitLogMsgLengthList = commitLogBodyList.stream().map(commitLogDTO -> commitLogDTO.getBody().length).collect(Collectors.toList());
+                                    String commitLogFileName = commitLogBodyList.get(0).getFileName();
+                                    String consumeMsgLaterReqId = UUID.randomUUID().toString();
+                                    ConsumeMsgRetryReqDTO consumeMsgRetryReqDTO = new ConsumeMsgRetryReqDTO();
+                                    consumeMsgRetryReqDTO.setConsumerGroup(this.getConsumeGroup());
+                                    consumeMsgRetryReqDTO.setTopic(this.getTopic());
+                                    consumeMsgRetryReqDTO.setQueueId(consumeMsgRespDTO.getQueueId());
+                                    consumeMsgRetryReqDTO.setMsgId(consumeMsgLaterReqId);
+                                    consumeMsgRetryReqDTO.setCommitLogOffsetList(commitLogOffsetList);
+                                    consumeMsgRetryReqDTO.setCommitLogMsgLengthList(commitLogMsgLengthList);
+                                    consumeMsgRetryReqDTO.setRetryTime(1);
+                                    consumeMsgRetryReqDTO.setCommitLogName(commitLogFileName);
+                                    consumeMsgRetryReqDTO.setAckCount(this.getBatchSize());
+                                    TcpMsg tcpMsg = new TcpMsg(BrokerEventCode.CONSUME_RETRY.getCode(), JSON.toJSONBytes(consumeMsgRetryReqDTO));
+                                    TcpMsg resp = brokerNettyRemoteClient.sendSyncMsg(tcpMsg, consumeMsgLaterReqId);
+                                    logger.info("consume later resp:{}", JSON.toJSONString(resp));
                                 }
                             }
                         }

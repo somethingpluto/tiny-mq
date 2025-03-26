@@ -1,6 +1,5 @@
 package org.tiny.mq.model;
 
-import com.alibaba.fastjson.JSON;
 import org.tiny.mq.utils.ByteConvertUtils;
 
 
@@ -59,15 +58,5 @@ public class ConsumeQueueDetailModel {
         this.setCommitLogFilename(ByteConvertUtils.bytesToInt(ByteConvertUtils.readInPos(body, 0, 4)));
         this.setMsgIndex(ByteConvertUtils.bytesToInt(ByteConvertUtils.readInPos(body, 4, 4)));
         this.setMsgLength(ByteConvertUtils.bytesToInt(ByteConvertUtils.readInPos(body, 8, 4)));
-    }
-
-    public static void main(String[] args) {
-        ConsumeQueueDetailModel consumeQueueDetailModel = new ConsumeQueueDetailModel();
-        consumeQueueDetailModel.setCommitLogFilename(1);
-        consumeQueueDetailModel.setMsgIndex(1522);
-        consumeQueueDetailModel.setMsgLength(26);
-        byte[] body = consumeQueueDetailModel.convertToBytes();
-        consumeQueueDetailModel.buildFromBytes(body);
-        System.out.println(JSON.toJSONString(consumeQueueDetailModel));
     }
 }

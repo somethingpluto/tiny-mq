@@ -4,14 +4,40 @@ import java.util.List;
 
 public class ConsumeMsgRetryReqDTO extends BaseBrokerRemoteDTO {
     private String topic;
-    private String consumeGroup;
+    private String consumerGroup;
     private Integer queueId;
     private String ip;
     private Integer port;
     private Integer ackCount;
     private List<Long> commitLogOffsetList;
-    private List<Integer> consumeQueueOffsetList;
+    private List<Integer> commitLogMsgLengthList;
+    private String commitLogName;
+    //重试次数
     private int retryTime;
+
+    public String getTopic() {
+        return topic;
+    }
+
+    public void setTopic(String topic) {
+        this.topic = topic;
+    }
+
+    public String getConsumerGroup() {
+        return consumerGroup;
+    }
+
+    public void setConsumerGroup(String consumerGroup) {
+        this.consumerGroup = consumerGroup;
+    }
+
+    public Integer getQueueId() {
+        return queueId;
+    }
+
+    public void setQueueId(Integer queueId) {
+        this.queueId = queueId;
+    }
 
     public String getIp() {
         return ip;
@@ -45,12 +71,20 @@ public class ConsumeMsgRetryReqDTO extends BaseBrokerRemoteDTO {
         this.commitLogOffsetList = commitLogOffsetList;
     }
 
-    public List<Integer> getConsumeQueueOffsetList() {
-        return consumeQueueOffsetList;
+    public List<Integer> getCommitLogMsgLengthList() {
+        return commitLogMsgLengthList;
     }
 
-    public void setConsumeQueueOffsetList(List<Integer> consumeQueueOffsetList) {
-        this.consumeQueueOffsetList = consumeQueueOffsetList;
+    public void setCommitLogMsgLengthList(List<Integer> commitLogMsgLengthList) {
+        this.commitLogMsgLengthList = commitLogMsgLengthList;
+    }
+
+    public String getCommitLogName() {
+        return commitLogName;
+    }
+
+    public void setCommitLogName(String commitLogName) {
+        this.commitLogName = commitLogName;
     }
 
     public int getRetryTime() {
@@ -59,29 +93,5 @@ public class ConsumeMsgRetryReqDTO extends BaseBrokerRemoteDTO {
 
     public void setRetryTime(int retryTime) {
         this.retryTime = retryTime;
-    }
-
-    public String getTopic() {
-        return topic;
-    }
-
-    public void setTopic(String topic) {
-        this.topic = topic;
-    }
-
-    public String getConsumeGroup() {
-        return consumeGroup;
-    }
-
-    public void setConsumeGroup(String consumeGroup) {
-        this.consumeGroup = consumeGroup;
-    }
-
-    public Integer getQueueId() {
-        return queueId;
-    }
-
-    public void setQueueId(Integer queueId) {
-        this.queueId = queueId;
     }
 }

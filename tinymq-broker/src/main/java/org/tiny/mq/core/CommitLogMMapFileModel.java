@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tiny.mq.cache.CommonCache;
 import org.tiny.mq.common.constants.BrokerConstants;
+import org.tiny.mq.common.dto.ConsumeMsgCommitLogDTO;
 import org.tiny.mq.common.dto.MessageDTO;
 import org.tiny.mq.model.*;
 import org.tiny.mq.utils.LogFileNameUtil;
@@ -157,12 +158,16 @@ public class CommitLogMMapFileModel {
      * @param length
      * @return
      */
-    public byte[] readContent(int pos, int length) {
+    public ConsumeMsgCommitLogDTO readContent(int pos, int length) {
         ByteBuffer readBuf = readByteBuffer.slice();
         readBuf.position(pos);
         byte[] readBytes = new byte[length];
         readBuf.get(readBytes);
-        return readBytes;
+        ConsumeMsgCommitLogDTO consumeMsgCommitLogDTO = new ConsumeMsgCommitLogDTO();
+        consumeMsgCommitLogDTO.setBody(readBytes);
+        consumeMsgCommitLogDTO.setFileName(file.getName());
+        consumeMsgCommitLogDTO.setCommitLogOffset(pos);
+        return consumeMsgCommitLogDTO;
     }
 
     /**

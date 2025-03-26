@@ -18,9 +18,13 @@ import org.tiny.mq.model.EagleMqTopicModel;
 import org.tiny.mq.rebalance.ConsumerInstance;
 
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 处理消费不成功的信息
+ */
 public class ConsumeMsgRetryListener implements Listener<ConsumeMsgRetryEvent> {
     private static final Logger logger = LoggerFactory.getLogger(ConsumeMsgRetryListener.class);
     private static final List<Integer> RETRY_STEP = Arrays.asList(3, 5, 10, 15, 30);
@@ -30,6 +34,7 @@ public class ConsumeMsgRetryListener implements Listener<ConsumeMsgRetryEvent> {
         logger.info("consume msg retry handler,event:{}", JSON.toJSONString(event));
         ConsumeMsgRetryRespDTO consumeMsgRetryRespDTO = new ConsumeMsgRetryRespDTO();
         consumeMsgRetryRespDTO.setMsgId(event.getMsgId());
+        // 获取Retry信息
         ConsumeMsgRetryReqDTO consumeMsgRetryReqDTO = event.getConsumeMsgRetryReqDTO();
         String topic = consumeMsgRetryReqDTO.getTopic();
         InetSocketAddress inetSocketAddress = (InetSocketAddress) event.getChannelHandlerContext().channel().remoteAddress();
@@ -37,9 +42,10 @@ public class ConsumeMsgRetryListener implements Listener<ConsumeMsgRetryEvent> {
         int port = inetSocketAddress.getPort();
         consumeMsgRetryReqDTO.setPort(port);
         consumeMsgRetryReqDTO.setIp(ip);
+        // 获取queueId
         Integer queueId = consumeMsgRetryReqDTO.getQueueId();
         Integer ackCount = consumeMsgRetryReqDTO.getAckCount();
-        String consumeGroup = consumeMsgRetryReqDTO.getConsumeGroup();
+        String consumeGroup = consumeMsgRetryReqDTO.getConsumerGroup();
 
         // 查看对应的主题是否存在
         EagleMqTopicModel eagleMqTopicModel = CommonCache.getEagleMqTopicModelMap().get(topic);
@@ -74,14 +80,14 @@ public class ConsumeMsgRetryListener implements Listener<ConsumeMsgRetryEvent> {
             CommonCache.getConsumeQueueConsumeHandler().ack(topic, consumeGroup, queueId);
         }
         List<Long> commitLogOffsetList = consumeMsgRetryReqDTO.getCommitLogOffsetList();
-        List<Integer> consumeQueueOffsetList = consumeMsgRetryReqDTO.getConsumeQueueOffsetList();
+        List<Integer> consumeQueueOffsetList = consumeMsgRetryReqDTO.getCommitLogMsgLengthList();
         for (int i = 0; i < commitLogOffsetList.size(); i++) {
             Long commitLogMsgLength = commitLogOffsetList.get(i);
             Integer commitLogOffset = consumeQueueOffsetList.get(i);
             MessageRetryDTO messageRetryDTO = new MessageRetryDTO();
             messageRetryDTO.setTopic("retry");
             messageRetryDTO.setQueueId(consumeMsgRetryReqDTO.getQueueId());
-            messageRetryDTO.setConsumeGroup(consumeMsgRetryReqDTO.getConsumeGroup());
+            messageRetryDTO.setConsumeGroup(consumeMsgRetryReqDTO.getConsumerGroup());
             messageRetryDTO.setSourceCommitLogOffset((int) commitLogOffset);
             messageRetryDTO.setSourceCommitLogSize(commitLogMsgLength);
             messageRetryDTO.setRetryCount(consumeMsgRetryReqDTO.getRetryTime());
@@ -100,8 +106,7 @@ public class ConsumeMsgRetryListener implements Listener<ConsumeMsgRetryEvent> {
             messageDTO.setBody(JSON.toJSONBytes(messageRetryDTO));
             messageDTO.setRetry(true);
             CommonCache.getCommitLogAppendHandler().appendMsg(messageDTO);
-            // TODO: this part error
-            return;
+            logger.info("retry message content:{}", JSON.toJSONString(messageRetryDTO));
         }
 
         TcpMsg tcpMsg = new TcpMsg(BrokerResponseCode.CONSUME_MSG_RETRY_RESP.getCode(), JSON.toJSONBytes(consumeMsgRetryRespDTO));

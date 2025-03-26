@@ -24,6 +24,7 @@ public class ConsumeMsgAckListener implements Listener<ConsumeMsgAckEvent> {
 
     @Override
     public void onReceive(ConsumeMsgAckEvent event) throws Exception {
+        logger.info("consume msg ack handler,event:{}", JSON.toJSONString(event));
         ConsumeMsgAckReqDTO consumeMsgAckReqDTO = event.getConsumeMsgAckReqDTO();
         String topic = consumeMsgAckReqDTO.getTopic();
         String consumeGroup = consumeMsgAckReqDTO.getConsumeGroup();

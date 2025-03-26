@@ -26,7 +26,7 @@ public class TestConsumerSuite {
             @Override
             public ConsumeResult consume(List<ConsumeMessage> consumeMessages) {
                 for (ConsumeMessage consumeMessage : consumeMessages) {
-                    System.out.println("消费端获取的数据内容:" + new String(consumeMessage.getBody()));
+                    System.out.println("消费端获取的数据内容:" + new String(consumeMessage.getConsumeMsgCommitLogDTO().getBody()));
                 }
                 return ConsumeResult.CONSUME_SUCCESS();
             }
@@ -48,7 +48,7 @@ public class TestConsumerSuite {
             @Override
             public ConsumeResult consume(List<ConsumeMessage> consumeMessages) {
                 for (ConsumeMessage consumeMessage : consumeMessages) {
-                    System.out.println("消费端获取的数据内容:" + new String(consumeMessage.getBody()));
+                    System.out.println("消费端获取的数据内容:" + new String(consumeMessage.getConsumeMsgCommitLogDTO().getBody()));
                 }
                 return ConsumeResult.CONSUME_SUCCESS();
             }
@@ -73,7 +73,7 @@ public class TestConsumerSuite {
             @Override
             public ConsumeResult consume(List<ConsumeMessage> consumeMessages) {
                 for (ConsumeMessage consumeMessage : consumeMessages) {
-                    System.out.println("消费端获取的数据内容:" + new String(consumeMessage.getBody()));
+                    System.out.println("消费端获取的数据内容:" + new String(consumeMessage.getConsumeMsgCommitLogDTO().getBody()));
                 }
                 System.out.println("测试消息重拾功能");
                 return ConsumeResult.CONSUME_LATER();
