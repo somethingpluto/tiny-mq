@@ -5,11 +5,30 @@ public class DelayMessageDTO {
     private SlotStoreTypeEnum slotStoreTypeEnum;
     private int delay;
 
+    private long nextExecuteTime;
+
+    public long getNextExecuteTime() {
+        return nextExecuteTime;
+    }
+
+
+    public void setNextExecuteTime(long nextExecuteTime) {
+        this.nextExecuteTime = nextExecuteTime;
+    }
+
     public DelayMessageDTO(Object data, SlotStoreTypeEnum slotStoreTypeEnum, int delay) {
         this.data = data;
         this.slotStoreTypeEnum = slotStoreTypeEnum;
         this.delay = delay;
     }
+
+    public DelayMessageDTO(Object data, SlotStoreTypeEnum slotStoreTypeEnum, int delay, long nextExecuteTime) {
+        this.data = data;
+        this.slotStoreTypeEnum = slotStoreTypeEnum;
+        this.delay = delay;
+        this.nextExecuteTime = nextExecuteTime;
+    }
+
 
     public DelayMessageDTO() {
     }

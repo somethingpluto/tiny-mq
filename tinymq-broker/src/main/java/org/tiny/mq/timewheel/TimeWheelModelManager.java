@@ -53,17 +53,16 @@ public class TimeWheelModelManager {
         try {
             secondsLock.lock();
             int current = secondsTimeWheelModel.getCurrent();
-            logger.info("second time wheel do scan slot:{}", current);
             TimeWheelSlotListModel timeWheelSlotListModel = secondsTimeWheelModel.getTimeWheelSlotListModels()[current];
             List<TimeWheelSlotModel> timeWheelSlotModelList = timeWheelSlotListModel.getTimeWheelSlotModelList();
             if (CollectionUtils.isNotEmpty(timeWheelSlotModelList)) {
                 TimeWheelEvent timeWheelEvent = new TimeWheelEvent();
-                timeWheelEvent.setTimeWheelSlotModelList(timeWheelSlotModelList);
+                timeWheelEvent.setTimeWheelSlotModelList(new ArrayList<>(timeWheelSlotModelList));
                 logger.info("second scan slot:{}  data:{}", current, timeWheelSlotModelList);
                 eventBus.publish(timeWheelEvent);
             }
             // 将要执行的任务发生出去后
-            timeWheelSlotListModel.setTimeWheelSlotModelList(new ArrayList<>());
+            timeWheelSlotListModel.getTimeWheelSlotModelList().clear();
             if (current == secondsTimeWheelModel.getTimeWheelSlotListModels().length - 1) { // 刚好走到最后的位置
                 current = 0;
             } else {
@@ -81,7 +80,6 @@ public class TimeWheelModelManager {
         try {
             minutesLock.lock();
             int current = minutesTimeWheelModel.getCurrent();
-            logger.info("minute time wheel do scan slot:{}", current);
             TimeWheelSlotListModel timeWheelSlotListModel = minutesTimeWheelModel.getTimeWheelSlotListModels()[current];
             List<TimeWheelSlotModel> timeWheelSlotModelList = timeWheelSlotListModel.getTimeWheelSlotModelList();
             List<TimeWheelSlotModel> needHandleList = new ArrayList<>();
@@ -100,11 +98,11 @@ public class TimeWheelModelManager {
             // 将所有要处理的发送出去
             if (CollectionUtils.isNotEmpty(needHandleList)) {
                 TimeWheelEvent timeWheelEvent = new TimeWheelEvent();
-                timeWheelEvent.setTimeWheelSlotModelList(timeWheelSlotModelList);
-                logger.info("minute scan slot:{}  data:{}", current, timeWheelSlotModelList);
+                timeWheelEvent.setTimeWheelSlotModelList(needHandleList);
+                logger.info("minute scan slot:{}  data:{}", current, needHandleList);
                 eventBus.publish(timeWheelEvent);
             }
-            timeWheelSlotListModel.setTimeWheelSlotModelList(new ArrayList<>());
+            timeWheelSlotListModel.getTimeWheelSlotModelList().clear();
             if (current == minutesTimeWheelModel.getTimeWheelSlotListModels().length - 1) {
                 current = 0;
             } else {

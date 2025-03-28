@@ -11,8 +11,8 @@ import org.tiny.mq.common.constants.BrokerConstants;
 import org.tiny.mq.common.dto.MessageDTO;
 import org.tiny.mq.common.dto.SendMessageToBrokerResponseDTO;
 import org.tiny.mq.common.enums.*;
+import org.tiny.mq.common.event.model.Event;
 import org.tiny.mq.common.remote.SyncFuture;
-import org.tiny.mq.event.model.PushMsgEvent;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,36 +40,34 @@ public class CommitLogAppendHandler {
         mapFileModel.writeContent(messageDTO, true);
     }
 
-    public void appendMsg(PushMsgEvent event) {
-        MessageDTO messageDTO = event.getMessageDTO();
+    public void appendMsg(MessageDTO messageDTO, Event event) {
         boolean isAsyncSend = messageDTO.getSendWay() == MessageSendWay.ASYNC.getCode();
         String brokerMode = CommonCache.getGlobalProperties().getBrokerClusterMode();
         String brokerRole = CommonCache.getGlobalProperties().getBrokerClusterRole();
         if (brokerMode.equals(BrokerClusterModeEnum.MASTER_SLAVE.getDesc())) {
             if (brokerRole.equals(BrokerRegistryEnum.MASTER.getDesc())) {  // 主节点同步行为
-                if (isAsyncSend) { //
-                    masterAsyncSlaveBroker(event);
+                if (isAsyncSend) {
+                    masterAsyncSlaveBroker(messageDTO, event);
                 } else {
-                    masterSyncSlaveBroker(event);
+                    masterSyncSlaveBroker(messageDTO, event);
                 }
             } else { // 从节点接收完成同步动作 响应主节点
-                slaveBrokerSendRespToMaster(event);
+                slaveBrokerSendRespToMaster(messageDTO, event);
             }
 
         } else {// 单机模式
             if (isAsyncSend) { // 异步返回
                 return;
             } else { // 同步返回
-                singleModeSyncToBroker(event);
+                singleModeSyncToBroker(messageDTO, event);
             }
         }
     }
 
 
-    private void slaveBrokerSendRespToMaster(PushMsgEvent event) {
-        MessageDTO messageDTO = event.getMessageDTO();
+    private void slaveBrokerSendRespToMaster(MessageDTO messageDTO, Event event) {
         int sendWay = messageDTO.getSendWay();
-        if (sendWay == MessageSendWay.ASYNC.getCode()) {
+        if (sendWay == MessageSendWay.ASYNC.getCode() || isDelayMsg(messageDTO)) {
             return;
         }
         if (sendWay == MessageSendWay.SYNC.getCode()) {
@@ -81,8 +79,7 @@ public class CommitLogAppendHandler {
         }
     }
 
-    private void masterSyncSlaveBroker(PushMsgEvent event) {
-        MessageDTO messageDTO = event.getMessageDTO();
+    private void masterSyncSlaveBroker(MessageDTO messageDTO, Event event) {
         ArrayList<String> needAckMsgIdList = new ArrayList<>();
         for (ChannelHandlerContext channelHandlerContext : CommonCache.getSlaveChannelMap().values()) {
             MessageDTO toSlaveMessageDTO = new MessageDTO();
@@ -120,10 +117,10 @@ public class CommitLogAppendHandler {
         logger.info("all slave node sync");
     }
 
-    private void masterAsyncSlaveBroker(PushMsgEvent event) {
+    private void masterAsyncSlaveBroker(MessageDTO messageDTO, Event event) {
         // 主节点给所有的slave发送PushMsgEvent
         for (ChannelHandlerContext channelHandlerContext : CommonCache.getSlaveChannelMap().values()) {
-            TcpMsg tcpMsg = new TcpMsg(BrokerEventCode.PUSH_MSG.getCode(), JSON.toJSONBytes(event.getMessageDTO()));
+            TcpMsg tcpMsg = new TcpMsg(BrokerEventCode.PUSH_MSG.getCode(), JSON.toJSONBytes(messageDTO));
             channelHandlerContext.writeAndFlush(tcpMsg);
         }
     }
@@ -131,12 +128,18 @@ public class CommitLogAppendHandler {
     private void singleModeSyncToBroker() {
     }
 
-    private void singleModeSyncToBroker(PushMsgEvent event) {
-        MessageDTO messageDTO = event.getMessageDTO();
+    private void singleModeSyncToBroker(MessageDTO messageDTO, Event event) {
+        if (isDelayMsg(messageDTO)) {
+            return;
+        }
         SendMessageToBrokerResponseDTO sendMessageToBrokerResponseDTO = new SendMessageToBrokerResponseDTO();
         sendMessageToBrokerResponseDTO.setStatus(SendMessageToBrokerResponseStatus.SUCCESS.getCode());
         sendMessageToBrokerResponseDTO.setMsgId(messageDTO.getMsgId());
         TcpMsg responseMsg = new TcpMsg(BrokerResponseCode.SEND_MSG_RESP.getCode(), JSON.toJSONBytes(sendMessageToBrokerResponseDTO));
         event.getChannelHandlerContext().writeAndFlush(responseMsg);
+    }
+
+    private boolean isDelayMsg(MessageDTO messageDTO) {
+        return messageDTO.getDelay() > 0;
     }
 }

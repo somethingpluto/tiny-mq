@@ -10,6 +10,7 @@ import org.tiny.mq.common.dto.SendMessageToBrokerResponseDTO;
 import org.tiny.mq.common.enums.BrokerResponseCode;
 import org.tiny.mq.common.enums.SendMessageToBrokerResponseStatus;
 import org.tiny.mq.common.event.Listener;
+import org.tiny.mq.common.event.model.Event;
 import org.tiny.mq.common.utils.AssertUtils;
 import org.tiny.mq.event.model.PushMsgEvent;
 import org.tiny.mq.timewheel.DelayMessageDTO;
@@ -25,20 +26,25 @@ public class PushMsgListener implements Listener<PushMsgEvent> {
         MessageDTO messageDTO = event.getMessageDTO();
         int delay = messageDTO.getDelay();
         if (delay != 0) {
-            this.appendDelayMsg(event);
+            this.appendDelayMsg(messageDTO, event);
         } else {
-            CommonCache.getCommitLogAppendHandler().appendMsg(event);
+            this.appendDefaultMsg(messageDTO, event);
         }
     }
 
-    private void appendDelayMsg(PushMsgEvent event) {
-        MessageDTO messageDTO = event.getMessageDTO();
+
+    private void appendDefaultMsg(MessageDTO messageDTO, Event event) {
+        CommonCache.getCommitLogAppendHandler().appendMsg(messageDTO, event);
+    }
+
+    private void appendDelayMsg(MessageDTO messageDTO, Event event) {
         int delay = messageDTO.getDelay();
         AssertUtils.isTrue(delay <= 3600, "too large delay second");
         DelayMessageDTO delayMessageDTO = new DelayMessageDTO();
         delayMessageDTO.setData(messageDTO);
         delayMessageDTO.setSlotStoreTypeEnum(SlotStoreTypeEnum.DELAY_MESSAGE_DTO);
         delayMessageDTO.setDelay(messageDTO.getDelay());
+        delayMessageDTO.setNextExecuteTime(System.currentTimeMillis() + delay * 1000L);
         CommonCache.getTimeWheelModelManager().add(delayMessageDTO);
         SendMessageToBrokerResponseDTO sendMessageToBrokerResponseDTO = new SendMessageToBrokerResponseDTO();
         sendMessageToBrokerResponseDTO.setMsgId(messageDTO.getMsgId());

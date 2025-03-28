@@ -5,7 +5,6 @@ public class MessageDTO {
     private String topic;
     private int queueId = -1;
     private String msgId;
-
     private int sendWay;
     private byte[] body;
     private boolean isRetry;

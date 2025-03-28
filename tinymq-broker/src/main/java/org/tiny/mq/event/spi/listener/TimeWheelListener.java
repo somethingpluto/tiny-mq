@@ -1,5 +1,7 @@
 package org.tiny.mq.event.spi.listener;
 
+import com.alibaba.fastjson.JSON;
+import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tiny.mq.cache.CommonCache;
@@ -9,6 +11,7 @@ import org.tiny.mq.common.dto.MessageRetryDTO;
 import org.tiny.mq.common.event.Listener;
 import org.tiny.mq.core.CommitLogMMapFileModel;
 import org.tiny.mq.event.model.TimeWheelEvent;
+import org.tiny.mq.timewheel.DelayMessageDTO;
 import org.tiny.mq.timewheel.SlotStoreTypeEnum;
 import org.tiny.mq.timewheel.TimeWheelSlotModel;
 
@@ -23,7 +26,7 @@ public class TimeWheelListener implements Listener<TimeWheelEvent> {
     @Override
     public void onReceive(TimeWheelEvent event) throws Exception {
         List<TimeWheelSlotModel> timeWheelSlotModelList = event.getTimeWheelSlotModelList();
-        if (timeWheelSlotModelList != null && !timeWheelSlotModelList.isEmpty()) {
+        if (timeWheelSlotModelList == null || CollectionUtils.isEmpty(timeWheelSlotModelList)) {
             logger.error("timeWheelSlotModelList is empty");
             return;
         }
@@ -32,8 +35,10 @@ public class TimeWheelListener implements Listener<TimeWheelEvent> {
                 MessageRetryDTO messageRetryDTO = (MessageRetryDTO) timeWheelSlotModel.getData();
                 this.messageRetryHandler(messageRetryDTO);
             } else if (SlotStoreTypeEnum.DELAY_MESSAGE_DTO.getClazz().equals(timeWheelSlotModel.getStoreType())) {
-                MessageDTO messageDTO = (MessageDTO) timeWheelSlotModel.getData();
-                CommonCache.getCommitLogAppendHandler().appendMsg(messageDTO);
+                DelayMessageDTO delayMessageDTO = (DelayMessageDTO) timeWheelSlotModel.getData();
+                MessageDTO messageDTO = (MessageDTO) delayMessageDTO.getData();
+                CommonCache.getCommitLogAppendHandler().appendMsg(messageDTO, event);
+                logger.info("延迟消息入commit log data:{}", JSON.toJSONString(messageDTO));
             }
         }
     }

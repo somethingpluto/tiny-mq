@@ -18,11 +18,16 @@ public class TimeWheelSlotModel {
      */
     private Class storeType;
 
+
     public TimeWheelSlotModel(int delaySeconds, Object data, Class storeType) {
         this.delaySeconds = delaySeconds;
         this.data = data;
         this.storeType = storeType;
     }
+
+    public TimeWheelSlotModel() {
+    }
+
 
     public int getDelaySeconds() {
         return delaySeconds;

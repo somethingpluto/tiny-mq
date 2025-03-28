@@ -73,7 +73,7 @@ public class TestProducerSuite {
 
     /**
      * 设计延迟消息
-     * 时间范围 过大的延迟时间 会导致数据一直没有执行消耗时间轮
+     * 时间范围 过大的延迟时间 会导致数据一直在时间轮
      */
     @Test
     public void sendUserEnterDelayMsg() {
