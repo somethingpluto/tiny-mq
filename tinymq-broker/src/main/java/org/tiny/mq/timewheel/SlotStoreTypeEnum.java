@@ -7,8 +7,7 @@ import org.tiny.mq.common.dto.MessageRetryDTO;
  */
 public enum SlotStoreTypeEnum {
 
-    MESSAGE_RETRY_DTO(MessageRetryDTO.class),
-    ;
+    MESSAGE_RETRY_DTO(MessageRetryDTO.class), DELAY_MESSAGE_DTO(DelayMessageDTO.class);
 
     Class clazz;
 

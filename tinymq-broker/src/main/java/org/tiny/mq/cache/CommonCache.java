@@ -11,6 +11,7 @@ import org.tiny.mq.netty.nameserver.NameServerClient;
 import org.tiny.mq.rebalance.ConsumerInstance;
 import org.tiny.mq.rebalance.ConsumerInstancePool;
 import org.tiny.mq.slave.SlaveSyncService;
+import org.tiny.mq.timewheel.TimeWheelModelManager;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,6 +36,15 @@ public class CommonCache {
     private static ConsumeQueueConsumeHandler consumeQueueConsumeHandler;
     private static SlaveSyncService slaveSyncService;
     private static Map<String, ChannelHandlerContext> slaveChannelMap = new HashMap<>();
+    private static TimeWheelModelManager timeWheelModelManager = new TimeWheelModelManager();
+
+    public static TimeWheelModelManager getTimeWheelModelManager() {
+        return timeWheelModelManager;
+    }
+
+    public static void setTimeWheelModelManager(TimeWheelModelManager timeWheelModelManager) {
+        CommonCache.timeWheelModelManager = timeWheelModelManager;
+    }
 
     public static SlaveSyncService getSlaveSyncService() {
         return slaveSyncService;

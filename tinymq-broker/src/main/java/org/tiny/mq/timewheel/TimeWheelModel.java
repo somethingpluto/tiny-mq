@@ -6,8 +6,17 @@ import org.tiny.mq.common.utils.AssertUtils;
  * 时间轮模型
  */
 public class TimeWheelModel {
+    /**
+     * 当前时间轮的槽位
+     */
     private int current;
+    /**
+     * 时间轮槽位列表
+     */
     private TimeWheelSlotListModel[] timeWheelSlotListModels;
+    /**
+     * 时间单位
+     */
     private String unit;
 
     public TimeWheelModel(int current, TimeWheelSlotListModel[] timeWheelSlotListModels, String unit) {

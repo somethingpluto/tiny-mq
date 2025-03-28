@@ -166,20 +166,20 @@
 	{
 		"commitLogModel":{
 			"fileName":"00000000",
-			"offset":2167,
+			"offset":0,
 			"offsetLimit":1048576
 		},
-		"createAt":1742974502639,
+		"createAt":1743082882249,
 		"queueList":[
 			{
 				"fileName":"00000000",
 				"id":0,
 				"lastOffset":0,
-				"latestOffset":144,
+				"latestOffset":0,
 				"offsetLimit":1048576
 			}
 		],
-		"topic":"retry",
-		"updateAt":1742974502639
+		"topic":"user_enter",
+		"updateAt":1743082882249
 	}
 ]

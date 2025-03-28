@@ -3,6 +3,7 @@ package org.tiny.mq;
 
 import org.tiny.mq.cache.CommonCache;
 import org.tiny.mq.common.enums.BrokerClusterModeEnum;
+import org.tiny.mq.common.event.EventBus;
 import org.tiny.mq.config.ConsumeQueueOffsetLoader;
 import org.tiny.mq.config.GlobalPropertiesLoader;
 import org.tiny.mq.config.TinyMqTopicLoader;
@@ -12,6 +13,7 @@ import org.tiny.mq.core.ConsumeQueueConsumeHandler;
 import org.tiny.mq.model.EagleMqTopicModel;
 import org.tiny.mq.netty.broker.BrokerServer;
 import org.tiny.mq.slave.SlaveSyncService;
+import org.tiny.mq.timewheel.TimeWheelModelManager;
 
 import java.io.IOException;
 
@@ -72,6 +74,12 @@ public class BrokerStartUp {
         CommonCache.getConsumerInstancePool().startReBalanceJob();
     }
 
+    private static void initTimeWheel() {
+        TimeWheelModelManager timeWheelModelManager = CommonCache.getTimeWheelModelManager();
+        timeWheelModelManager.init(new EventBus("time-wheel-event-bus"));
+        timeWheelModelManager.doScanTask();
+    }
+
     private static void initBrokerServer() throws InterruptedException {
         BrokerServer brokerServer = new BrokerServer(CommonCache.getGlobalProperties().getBrokerPort());
         brokerServer.startServer();
@@ -82,6 +90,7 @@ public class BrokerStartUp {
         initProperties();
         initNameServerChannel();
         initReBalanceJob();
+        initTimeWheel();
         //这个函数是会阻塞的
         initBrokerServer();
     }

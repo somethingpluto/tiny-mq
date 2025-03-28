@@ -5,11 +5,17 @@ package org.tiny.mq.timewheel;
  * 时间轮槽模型
  */
 public class TimeWheelSlotModel {
-    // 延迟时间
+    /**
+     * 延迟时间
+     */
     private int delaySeconds;
-    // 数据
+    /**
+     * 数据
+     */
     private Object data;
-    // 存储类型
+    /**
+     * 存储类型
+     */
     private Class storeType;
 
     public TimeWheelSlotModel(int delaySeconds, Object data, Class storeType) {

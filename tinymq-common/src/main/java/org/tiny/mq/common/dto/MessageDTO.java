@@ -9,9 +9,18 @@ public class MessageDTO {
     private int sendWay;
     private byte[] body;
     private boolean isRetry;
+    private int delay;
 
     public boolean isRetry() {
         return isRetry;
+    }
+
+    public int getDelay() {
+        return delay;
+    }
+
+    public void setDelay(int delay) {
+        this.delay = delay;
     }
 
     public void setRetry(boolean retry) {

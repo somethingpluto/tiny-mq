@@ -47,6 +47,9 @@ public class DefaultMqConsumer {
     private Map<String, BrokerNettyRemoteClient> brokerNettyRemoteClientMap = new ConcurrentHashMap<>();
     private CountDownLatch countDownLatch = new CountDownLatch(1);
 
+    private CreateTopicClient createTopicClient = new CreateTopicClient();
+
+
     public void start() throws InterruptedException {
         nameServerNettyRemoteClient = new NameServerNettyRemoteClient(nsIp, nsPort);
         nameServerNettyRemoteClient.buildConnection();
@@ -54,17 +57,32 @@ public class DefaultMqConsumer {
         if (isRegistrySuccess) {
             this.startHeartBeatTask();
             this.fetchBrokerAddress();
-            this.startConsumeMsgTask();
+            this.createRetryTopic();
+            this.startConsumeMsgTask(topic);
+            this.startConsumeMsgTask("retry_" + this.getConsumeGroup());
             this.startRefreshBrokerAddressTask();
             countDownLatch.await();
         }
     }
 
     /**
+     * 创建重试主题
+     */
+    private void createRetryTopic() {
+
+        if (CollectionUtils.isNotEmpty(this.getBrokerAddressList())) {
+            createTopicClient.createTopic("retry_" + this.getConsumeGroup(), this.getBrokerAddressList().get(0));
+        } else if (CollectionUtils.isNotEmpty(this.getMasterAddressList())) {
+            createTopicClient.createTopic("retry_" + this.getConsumeGroup(), this.getMasterAddressList().get(0));
+        }
+    }
+
+    /**
      * 开启消费数据任务
      */
-    private void startConsumeMsgTask() {
+    private void startConsumeMsgTask(String topic) {
         Thread consumeTask = new Thread(() -> {
+            String pullMsgTopic = topic;
             while (true) {
                 try {
                     List<String> brokerNodeAddressList = new ArrayList<>();
@@ -88,7 +106,7 @@ public class DefaultMqConsumer {
                         ConsumeMsgReqDTO consumeMsgReqDTO = new ConsumeMsgReqDTO();
                         consumeMsgReqDTO.setMsgId(msgId);
                         consumeMsgReqDTO.setConsumeGroup(consumeGroup);
-                        consumeMsgReqDTO.setTopic(topic);
+                        consumeMsgReqDTO.setTopic(pullMsgTopic);
                         consumeMsgReqDTO.setBatchSize(batchSize);
                         TcpMsg consumeReqMsg = new TcpMsg(BrokerEventCode.CONSUME_MSG.getCode(), JSON.toJSONBytes(consumeMsgReqDTO));
                         TcpMsg pullMsgResp = brokerNettyRemoteClient.sendSyncMsg(consumeReqMsg, msgId);

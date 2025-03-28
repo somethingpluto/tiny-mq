@@ -170,6 +170,7 @@ public class CommitLogMMapFileModel {
         return consumeMsgCommitLogDTO;
     }
 
+
     /**
      * 将ConsumerQueue文件写入
      *

@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TimeWheelSlotListModel {
+    /**
+     * 时间槽集合
+     */
     private List<TimeWheelSlotModel> timeWheelSlotModelList = new ArrayList<>();
 
     public List<TimeWheelSlotModel> getTimeWheelSlotModelList() {

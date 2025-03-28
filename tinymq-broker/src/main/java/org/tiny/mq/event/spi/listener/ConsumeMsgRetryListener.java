@@ -106,6 +106,8 @@ public class ConsumeMsgRetryListener implements Listener<ConsumeMsgRetryEvent> {
             messageDTO.setBody(JSON.toJSONBytes(messageRetryDTO));
             messageDTO.setRetry(true);
             CommonCache.getCommitLogAppendHandler().appendMsg(messageDTO);
+            // TODO: 往时间轮组件投送消息
+            // topic->面对非常多的消费者 消息重试->往同一个consumerGroup里面投递，topic投递，consumeQueue投递
             logger.info("retry message content:{}", JSON.toJSONString(messageRetryDTO));
         }
 

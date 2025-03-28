@@ -162,5 +162,24 @@
 		],
 		"topic":"user_all_info",
 		"updateAt":1741947718450
+	},
+	{
+		"commitLogModel":{
+			"fileName":"00000000",
+			"offset":0,
+			"offsetLimit":1048576
+		},
+		"createAt":1743082882268,
+		"queueList":[
+			{
+				"fileName":"00000000",
+				"id":0,
+				"lastOffset":0,
+				"latestOffset":0,
+				"offsetLimit":1048576
+			}
+		],
+		"topic":"user_enter",
+		"updateAt":1743082882268
 	}
 ]
