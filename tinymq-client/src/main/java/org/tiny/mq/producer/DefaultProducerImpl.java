@@ -9,6 +9,7 @@ import org.tiny.mq.common.enums.*;
 import org.tiny.mq.common.remote.BrokerNettyRemoteClient;
 import org.tiny.mq.common.remote.BrokerRemoteRespHandler;
 import org.tiny.mq.common.remote.NameServerNettyRemoteClient;
+import org.tiny.mq.common.transaction.TransactionListener;
 import org.tiny.mq.common.utils.AssertUtils;
 
 import java.util.ArrayList;
@@ -255,6 +256,58 @@ public class DefaultProducerImpl implements Producer {
         messageDTO.setSendWay(MessageSendWay.ASYNC.getCode());
         TcpMsg tcpMsg = new TcpMsg(BrokerEventCode.PUSH_MSG.getCode(), JSON.toJSONBytes(messageDTO));
         remoteClient.sendAsyncMsg(tcpMsg);
+    }
+
+    /**
+     * 发送事务消息
+     *
+     * @param messageDTO
+     * @return
+     */
+    @Override
+    public SendResult sendTxMessage(MessageDTO messageDTO, TransactionListener transactionListener) {
+        // 判断messageDTO不为控
+        AssertUtils.isNotNull(messageDTO, "messageDTO is null");
+        AssertUtils.isNotNull(transactionListener, "transactionListener is null");
+        BrokerNettyRemoteClient remoteClient = getBrokerNettyRemoteClient();
+        String msgId = UUID.randomUUID().toString();
+        messageDTO.setMsgId(msgId);
+        messageDTO.setSendWay(MessageSendWay.SYNC.getCode());
+        messageDTO.setTxFlag(TransactionMessageFlagEnum.HALF_MSG.getCode());
+
+        TcpMsg tcpMsg = new TcpMsg(BrokerEventCode.PUSH_MSG.getCode(), JSON.toJSONBytes(messageDTO));
+        TcpMsg responseMsg = remoteClient.sendSyncMsg(tcpMsg, msgId);
+        // 确保half message发送成功
+        boolean halfMsgSendSuccess = responseMsg != null && responseMsg.getCode() == BrokerResponseCode.HALF_MSG_SEND_SUCCESS.getCode();
+        if (!halfMsgSendSuccess) {
+            throw new RuntimeException("half msg send failed");
+        }
+        LocalTransactionState localTransactionState = transactionListener.executeLocalTransaction(messageDTO);
+        AssertUtils.isNotNull(localTransactionState, "localTransactionState is null");
+        messageDTO.setLocalTxState(localTransactionState.getCode());
+        if (LocalTransactionState.COMMIT.equals(localTransactionState)) {
+            messageDTO.setTxFlag(TransactionMessageFlagEnum.REMAIN_HALF_ACK.getCode());
+            TcpMsg remainHalfAckMsg = new TcpMsg(BrokerEventCode.PUSH_MSG.getCode(), JSON.toJSONBytes(messageDTO));
+            TcpMsg remainHalfAckResp = remoteClient.sendSyncMsg(remainHalfAckMsg, msgId);
+            logger.info("sendTxMessage remainHalfAckResp :{}", remainHalfAckResp);
+        } else if (LocalTransactionState.ROLLBACK.equals(localTransactionState)) {
+            messageDTO.setTxFlag(TransactionMessageFlagEnum.REMAIN_HALF_ACK.getCode());
+            TcpMsg rollbackMsg = new TcpMsg(BrokerEventCode.PUSH_MSG.getCode(), JSON.toJSONBytes(messageDTO));
+            TcpMsg rollbackAckResp = remoteClient.sendSyncMsg(rollbackMsg, msgId);
+            logger.info("sendTxMessage rollbackAckResp :{}", rollbackAckResp);
+        } else if (LocalTransactionState.UNKNOWN.equals(localTransactionState)) {
+            //等待broker回调查询进行状态判断
+        }
+        //本地事务执行环节
+        SendResult sendResult = new SendResult();
+        sendResult.setSendStatus(SendStatus.SUCCESS);
+        return sendResult;
+    }
+
+
+    private BrokerNettyRemoteClient getBrokerNettyRemoteClient() {
+        BrokerNettyRemoteClient remoteClient = this.getBrokerNettyRemoteClientMap().values().stream().collect(Collectors.toList()).get(0);
+        return remoteClient;
     }
 
     public List<String> getMasterAddressList() {

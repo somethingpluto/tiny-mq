@@ -6,6 +6,7 @@ import org.tiny.mq.config.GlobalProperties;
 import org.tiny.mq.core.*;
 import org.tiny.mq.model.ConsumeQueueOffsetModel;
 import org.tiny.mq.model.EagleMqTopicModel;
+import org.tiny.mq.model.TransactionMsgAckModel;
 import org.tiny.mq.netty.nameserver.HeartBeatTaskManager;
 import org.tiny.mq.netty.nameserver.NameServerClient;
 import org.tiny.mq.rebalance.ConsumerInstance;
@@ -37,6 +38,16 @@ public class CommonCache {
     private static SlaveSyncService slaveSyncService;
     private static Map<String, ChannelHandlerContext> slaveChannelMap = new HashMap<>();
     private static TimeWheelModelManager timeWheelModelManager = new TimeWheelModelManager();
+
+    private static Map<String, TransactionMsgAckModel> transactionMsgModelMap = new ConcurrentHashMap<>();
+
+    public static Map<String, TransactionMsgAckModel> getTransactionMsgModelMap() {
+        return transactionMsgModelMap;
+    }
+
+    public static void setTransactionMsgModelMap(Map<String, TransactionMsgAckModel> transactionMsgModelMap) {
+        CommonCache.transactionMsgModelMap = transactionMsgModelMap;
+    }
 
     public static TimeWheelModelManager getTimeWheelModelManager() {
         return timeWheelModelManager;

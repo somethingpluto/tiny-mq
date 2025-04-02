@@ -10,6 +10,26 @@ public class MessageDTO {
     private boolean isRetry;
     private int delay;
 
+    private int txFlag = -1;
+
+    private int localTxState = -1;
+
+    public int getLocalTxState() {
+        return localTxState;
+    }
+
+    public void setLocalTxState(int localTxState) {
+        this.localTxState = localTxState;
+    }
+
+    public int getTxFlag() {
+        return txFlag;
+    }
+
+    public void setTxFlag(int txFlag) {
+        this.txFlag = txFlag;
+    }
+
     public boolean isRetry() {
         return isRetry;
     }

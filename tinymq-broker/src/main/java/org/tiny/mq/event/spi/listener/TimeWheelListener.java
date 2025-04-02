@@ -8,9 +8,11 @@ import org.tiny.mq.cache.CommonCache;
 import org.tiny.mq.common.dto.ConsumeMsgCommitLogDTO;
 import org.tiny.mq.common.dto.MessageDTO;
 import org.tiny.mq.common.dto.MessageRetryDTO;
+import org.tiny.mq.common.dto.TransactionMsgDTO;
 import org.tiny.mq.common.event.Listener;
 import org.tiny.mq.core.CommitLogMMapFileModel;
 import org.tiny.mq.event.model.TimeWheelEvent;
+import org.tiny.mq.model.TransactionMsgAckModel;
 import org.tiny.mq.timewheel.DelayMessageDTO;
 import org.tiny.mq.timewheel.SlotStoreTypeEnum;
 import org.tiny.mq.timewheel.TimeWheelSlotModel;
@@ -39,6 +41,15 @@ public class TimeWheelListener implements Listener<TimeWheelEvent> {
                 MessageDTO messageDTO = (MessageDTO) delayMessageDTO.getData();
                 CommonCache.getCommitLogAppendHandler().appendMsg(messageDTO, event);
                 logger.info("延迟消息入commit log data:{}", JSON.toJSONString(messageDTO));
+            } else if (SlotStoreTypeEnum.TRANSACTION_MSG_DTO.getClazz().equals(timeWheelSlotModel.getStoreType())) {
+                // 事务消息
+                DelayMessageDTO delayMessageDTO = (DelayMessageDTO) timeWheelSlotModel.getData();
+                TransactionMsgDTO transactionMsgDTO = (TransactionMsgDTO) delayMessageDTO.getData();
+                TransactionMsgAckModel transactionMsgAckModel = CommonCache.getTransactionMsgModelMap().get(transactionMsgDTO.getMsgId());
+                if (transactionMsgAckModel == null) {
+                    continue;
+                }
+                // TODO:如果记录仍然存在，就需要进行消息回溯
             }
         }
     }

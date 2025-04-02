@@ -2,6 +2,7 @@ package org.tiny.mq.producer;
 
 
 import org.tiny.mq.common.dto.MessageDTO;
+import org.tiny.mq.common.transaction.TransactionListener;
 
 public interface Producer {
 
@@ -20,4 +21,6 @@ public interface Producer {
      * @return
      */
     void sendAsync(MessageDTO messageDTO);
+
+    SendResult sendTxMessage(MessageDTO messageDTO, TransactionListener transactionListener);
 }
