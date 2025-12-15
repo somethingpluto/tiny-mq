@@ -22,9 +22,7 @@ public class OrderSystem {
 
     public static String generateOrderId() {
         Calendar cal = Calendar.getInstance();
-        int year = cal.get(Calendar.YEAR);
-        int month = cal.get(Calendar.MONTH) + 1;
-        int day = cal.get(Calendar.DAY_OF_MONTH);
+        .......
         return DEFAULT_ORDER_PREFIX + year + 
                String.format("%02d", month) + 
                String.format("%02d", day) + 
