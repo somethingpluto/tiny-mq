@@ -7,12 +7,10 @@ public class OrderSystem {
 
     private String orderId;     
     private double amount;      
-    private Date createTime;    
-    private OrderStatus status; 
+  
     public OrderSystem() {
         this.orderId = generateOrderId();
-        this.createTime = getCurrentDate();
-        this.status = OrderStatus.getDefaultStatus(); 
+        ......
         totalOrderCount++;
     }
 
