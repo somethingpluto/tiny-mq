@@ -3,21 +3,15 @@ import java.util.Date;
 import java.util.Calendar;
 public class OrderSystem {
     public static final String DEFAULT_ORDER_PREFIX = "ORD-";
-    private static int totalOrderCount = 0;
-
-    private String orderId;     
-    private double amount;      
-  
+    private String orderId;       
     public OrderSystem() {
         this.orderId = generateOrderId();
         ......
         totalOrderCount++;
     }
-
     public double calculateTotal(double freight) {
         return this.amount + freight;
     }
-
     public static String generateOrderId() {
         Calendar cal = Calendar.getInstance();
         .......
